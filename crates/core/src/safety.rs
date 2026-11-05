@@ -280,6 +280,9 @@ pub struct SystemPaths {
     /// Never delete the app itself or its data.
     pub app_paths: Vec<String>,
     pub unix: bool,
+    /// Apply the Unix system-folder rules (/usr, /etc, /tmp...). Off in tests,
+    /// whose temporary folders live under /tmp.
+    pub unix_system_dirs: bool,
 }
 
 impl SystemPaths {
@@ -317,6 +320,7 @@ impl SystemPaths {
                 .filter_map(|k| env(k))
                 .collect(),
             unix: cfg!(unix),
+            unix_system_dirs: cfg!(unix),
             ..Default::default()
         };
         sp.users_root = sp
@@ -452,7 +456,7 @@ impl Classifier {
         for a in &sp.app_paths {
             add(n(a), Some(AppOwnData), Some(AppOwnData));
         }
-        if sp.unix {
+        if sp.unix_system_dirs {
             for d in [
                 "/bin", "/boot", "/dev", "/etc", "/lib", "/lib32", "/lib64", "/proc", "/run", "/sbin", "/sys", "/usr",
                 "/var", "/snap", "/opt", "/root",
@@ -478,7 +482,7 @@ impl Classifier {
         critical.extend(sp.local_appdata.iter().map(|p| n(p)));
         critical.extend(sp.roaming_appdata.iter().map(|p| n(p)));
         critical.extend(sp.app_paths.iter().map(|p| n(p)));
-        if sp.unix {
+        if sp.unix_system_dirs {
             critical.extend(["/bin", "/boot", "/etc", "/lib", "/usr", "/var", "/home"].map(String::from));
         }
 
@@ -879,6 +883,7 @@ mod tests {
             onedrive: vec![],
             app_paths: vec![],
             unix: false,
+            unix_system_dirs: false,
         };
         Classifier::new(&sp)
     }

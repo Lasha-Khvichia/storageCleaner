@@ -39,11 +39,20 @@ services:
       && cargo clippy -p storage-cleaner-core -p storage-cleaner-cli --all-targets -- -D warnings
       && cd app && npm ci && npm run typecheck"
 
+  # Downloads dependencies and builds the CLI (needs network) so the sandbox
+  # below can run completely offline.
+  sandbox-build:
+    <<: *dev
+    command: cargo build --locked -p storage-cleaner-cli
+
   # Deletion tests run against throwaway files in a tmpfs, with no network and
   # the source mounted read-only, so a bug can never touch real data.
   sandbox:
     <<: *dev
     network_mode: none
+    depends_on:
+      sandbox-build:
+        condition: service_completed_successfully
     volumes:
       - .:/workspace:ro
       - cargo-registry:/usr/local/cargo/registry

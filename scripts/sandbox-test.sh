@@ -7,7 +7,7 @@ set -euo pipefail
 
 cd /workspace
 echo "▶ building CLI"
-cargo build --quiet -p storage-cleaner-cli
+cargo build --quiet --offline --locked -p storage-cleaner-cli
 SC=/cargo-target/debug/storagecleaner
 PHRASE="DELETE PERMANENTLY"
 
