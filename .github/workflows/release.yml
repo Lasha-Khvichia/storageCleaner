@@ -1,0 +1,85 @@
+name: Release
+
+# Builds the Windows installer and publishes a GitHub Release, but only for
+# NEW versions. The version lives in app/src-tauri/tauri.conf.json (bump it
+# with scripts/bump-version.ps1). Ordinary pushes don't build anything here.
+on:
+  push:
+    branches: [main]
+    paths:
+      - app/src-tauri/tauri.conf.json
+  workflow_dispatch: # manual "build this version now" button in the Actions tab
+
+permissions:
+  contents: write # create tags and releases
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Is this a new version?
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      is_new: ${{ steps.v.outputs.is_new }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(jq -r .version app/src-tauri/tauri.conf.json)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "v$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "v$version is already released, nothing to do."
+            echo "is_new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "v$version is new, building it."
+            echo "is_new=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  windows:
+    name: Build & publish v${{ needs.check.outputs.version }} (Windows)
+    needs: check
+    if: needs.check.outputs.is_new == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      # Never publish a version that fails its tests.
+      - name: Test core
+        run: cargo test --workspace --exclude storage-cleaner-app
+
+      - name: Install frontend dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Build installer & create release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: app
+          tagName: v__VERSION__
+          releaseName: storageCleaner v__VERSION__
+          releaseBody: |
+            ## Install
+            Download **storageCleaner_${{ needs.check.outputs.version }}_x64-setup.exe** below and run it.
+            The installer lets you choose who to install for and where to install.
+
+            > Windows SmartScreen may warn that the app is from an unknown publisher (the installer isn't code-signed yet).
+            > Click **More info → Run anyway**.
+          releaseDraft: false
+          prerelease: false
+          args: --bundles nsis

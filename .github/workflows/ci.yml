@@ -1,0 +1,47 @@
+name: CI
+
+# Checks every push and PR. Doesn't build installers (see release.yml).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Same containers you run locally with `docker compose run --rm <service>`.
+  docker:
+    name: Docker · ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [test, lint, sandbox]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose build dev
+      - run: docker compose run --rm ${{ matrix.service }}
+
+  windows:
+    name: Windows · tests + lint
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Frontend typecheck & build
+        working-directory: app
+        run: |
+          npm ci
+          npm run build
+      - run: cargo test --workspace --exclude storage-cleaner-app
+      - run: cargo clippy --workspace --all-targets -- -D warnings

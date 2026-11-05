@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --color-bg: #0b0f17;
+  --color-panel: #121826;
+  --color-panel-2: #182032;
+  --color-line: #232c40;
+  --color-muted: #8a94ab;
+  --color-accent: #6d8bff;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: #e6e9f2;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #2a3550; border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-track { background: transparent; }
+
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Indeterminate scan sweep along the bottom of the title bar. */
+@keyframes titlebar-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}
+.titlebar-sweep {
+  animation: titlebar-sweep 1.4s ease-in-out infinite;
+}

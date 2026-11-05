@@ -1,0 +1,78 @@
+# One-command workflows. Requires Docker Desktop.
+#
+#   docker compose run --rm test       # all Rust tests
+#   docker compose run --rm lint       # rustfmt + clippy + TypeScript typecheck
+#   docker compose run --rm sandbox    # end-to-end delete/restore tests on fake files
+#   docker compose run --rm cli scan /scan --depth 2   # scan a host folder (read-only)
+#   docker compose run --rm build-linux                # Linux .deb/.AppImage into ./dist-linux
+#   docker compose run --rm dev        # interactive shell with the full toolchain
+
+x-dev: &dev
+  build:
+    context: .
+    dockerfile: docker/Dockerfile
+    target: dev
+  image: storagecleaner-dev
+  working_dir: /workspace
+  volumes:
+    - .:/workspace
+    - cargo-registry:/usr/local/cargo/registry
+    - cargo-target:/cargo-target
+    # Keep Linux node_modules separate from the Windows ones on the host.
+    - node-modules:/workspace/app/node_modules
+
+services:
+  dev:
+    <<: *dev
+    command: bash
+    stdin_open: true
+    tty: true
+
+  test:
+    <<: *dev
+    command: cargo test --workspace --exclude storage-cleaner-app
+
+  lint:
+    <<: *dev
+    command: >
+      bash -c "cargo fmt --all --check
+      && cargo clippy -p storage-cleaner-core -p storage-cleaner-cli --all-targets -- -D warnings
+      && cd app && npm ci && npm run typecheck"
+
+  # Deletion tests run against throwaway files in a tmpfs, with no network and
+  # the source mounted read-only, so a bug can never touch real data.
+  sandbox:
+    <<: *dev
+    network_mode: none
+    volumes:
+      - .:/workspace:ro
+      - cargo-registry:/usr/local/cargo/registry
+      - cargo-target:/cargo-target
+    tmpfs:
+      - /sandbox:exec,size=512m
+    environment:
+      HOME: /sandbox/home
+      STORAGE_CLEANER_DATA_DIR: /sandbox/data
+    command: bash /workspace/scripts/sandbox-test.sh
+
+  # Scan any host folder read-only:  SCAN_PATH=D:/ docker compose run --rm cli scan /scan
+  # (Deleting needs the native app/CLI; the mount is read-only on purpose.)
+  cli:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: cli
+    image: storagecleaner-cli
+    volumes:
+      - ${SCAN_PATH:-.}:/scan:ro
+      - cli-data:/home/cleaner/.local/share/storageCleaner
+
+  build-linux:
+    <<: *dev
+    command: bash -c "cd app && npm ci && npx tauri build && mkdir -p /workspace/dist-linux && cp -r /cargo-target/release/bundle/. /workspace/dist-linux/"
+
+volumes:
+  cargo-registry:
+  cargo-target:
+  node-modules:
+  cli-data:

@@ -1,0 +1,23 @@
+[package]
+name = "storage-cleaner-core"
+description = "Scanning, safety classification, safe deletion and history for storageCleaner"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+rayon.workspace = true
+rusqlite.workspace = true
+sysinfo.workspace = true
+trash.workspace = true
+dirs.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[target."cfg(windows)".dependencies]
+windows-sys = { version = "0.61.2", features = ["Win32_UI_Shell", "Win32_Foundation"] }
