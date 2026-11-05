@@ -14,6 +14,8 @@ PHRASE="DELETE PERMANENTLY"
 pass=0
 ok()   { echo "  ✔ $1"; pass=$((pass + 1)); }
 fail() { echo "  ✘ $1"; exit 1; }
+# Reads ALL input (unlike grep -q, which exits early and breaks the pipe).
+has() { grep -c -- "$1" >/dev/null; }
 run_id() { grep -o 'history run #[0-9]*' | grep -o '[0-9]*$'; }
 
 F=/sandbox/fake
@@ -27,16 +29,16 @@ echo "important" > "$F/docs/notes.txt"
 echo "junk" > "$F/docs/old.tmp"
 
 echo "▶ scan & classification"
-$SC scan "$F" --json --depth 3 | grep -q '"rule": "node_modules"' && ok "scan rates node_modules" || fail "scan JSON missing node_modules rule"
-$SC suggest "$F" | grep -q "Developer clutter" && ok "node_modules suggested as developer clutter" || fail "node_modules not suggested"
-$SC suggest "$F" | grep -q "target" && ok "Rust target dir (CACHEDIR.TAG) suggested" || fail "target not suggested"
-$SC suggest "$F" | grep -q "notes.txt" && fail "personal file was suggested" || ok "personal files are not suggested"
+$SC scan "$F" --json --depth 3 | has '"rule": "node_modules"' && ok "scan rates node_modules" || fail "scan JSON missing node_modules rule"
+$SC suggest "$F" | has "Developer clutter" && ok "node_modules suggested as developer clutter" || fail "node_modules not suggested"
+$SC suggest "$F" | has "target" && ok "Rust target dir (CACHEDIR.TAG) suggested" || fail "target not suggested"
+$SC suggest "$F" | has "notes.txt" && fail "personal file was suggested" || ok "personal files are not suggested"
 
 echo "▶ recycle bin delete + restore"
 out=$($SC clean "$F/proj/node_modules" --yes)
 id=$(echo "$out" | run_id)
 [ ! -e "$F/proj/node_modules" ] && ok "moved to trash" || fail "still exists after trash delete"
-$SC restore "$id" | grep -q "Restored 1" && [ -e "$F/proj/node_modules/react/index.js" ] && ok "restored from trash (run #$id)" || fail "restore failed"
+$SC restore "$id" | has "Restored 1" && [ -e "$F/proj/node_modules/react/index.js" ] && ok "restored from trash (run #$id)" || fail "restore failed"
 
 echo "▶ permanent delete guards"
 if $SC clean "$F/docs/old.tmp" --permanent --confirm "yes please" >/dev/null 2>&1; then fail "permanent delete ran with wrong phrase"; fi
@@ -45,12 +47,12 @@ $SC clean "$F/docs/old.tmp" --permanent --confirm "$PHRASE" >/dev/null
 [ ! -e "$F/docs/old.tmp" ] && ok "permanent delete with exact phrase works" || fail "permanent delete failed"
 
 echo "▶ protected paths are never deleted"
-$SC clean "$F/proj/.git" --permanent --confirm "$PHRASE" | grep -q BLOCKED && [ -e "$F/proj/.git/HEAD" ] \
+$SC clean "$F/proj/.git" --permanent --confirm "$PHRASE" | has BLOCKED && [ -e "$F/proj/.git/HEAD" ] \
   && ok ".git is blocked" || fail ".git was not blocked"
-$SC clean /etc --permanent --confirm "$PHRASE" | grep -q BLOCKED && [ -e /etc/hostname ] \
+$SC clean /etc --permanent --confirm "$PHRASE" | has BLOCKED && [ -e /etc/hostname ] \
   && ok "/etc is blocked" || fail "/etc was not blocked"
-$SC clean / --permanent --confirm "$PHRASE" | grep -q BLOCKED && ok "filesystem root is blocked" || fail "/ was not blocked"
-$SC clean "$STORAGE_CLEANER_DATA_DIR" --permanent --confirm "$PHRASE" | grep -q BLOCKED \
+$SC clean / --permanent --confirm "$PHRASE" | has BLOCKED && ok "filesystem root is blocked" || fail "/ was not blocked"
+$SC clean "$STORAGE_CLEANER_DATA_DIR" --permanent --confirm "$PHRASE" | has BLOCKED \
   && ok "the app's own data folder is blocked" || fail "data dir was not blocked"
 
 echo "▶ symlinks are never followed"
@@ -60,7 +62,7 @@ $SC clean "$F/linky" --permanent --confirm "$PHRASE" >/dev/null
 [ -e /sandbox/outside/keep.txt ] && [ ! -e "$F/linky" ] && ok "link target survived" || fail "link target was deleted"
 
 echo "▶ history"
-$SC history | grep -q "cleanup(s)" && ok "history recorded" || fail "no history"
+$SC history | has "cleanup(s)" && ok "history recorded" || fail "no history"
 
 echo
 echo "All $pass sandbox checks passed."
