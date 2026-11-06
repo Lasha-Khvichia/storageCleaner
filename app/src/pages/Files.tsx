@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { FileStack, PieChart, ScanSearch } from "lucide-react";
 import { api, type TypeGroup } from "../api";
-import { Chart, SERIES_COLORS, tooltipBase } from "../components/Chart";
+import { Chart, useChartTheme } from "../components/Chart";
 import { PageHeader } from "../components/Layout";
 import { NodeTable } from "../components/NodeTable";
 import { Button, Card, Empty, Spinner, useAsync } from "../components/ui";
@@ -62,6 +62,7 @@ export function Files() {
 }
 
 function TypeBreakdown({ groups }: { groups: TypeGroup[] }) {
+  const { SERIES_COLORS, SURFACE, tooltipBase, theme } = useChartTheme();
   const [active, setActive] = useState<string | null>(null);
   const total = groups.reduce((s, g) => s + g.bytes, 0);
   const option = useMemo(
@@ -76,14 +77,14 @@ function TypeBreakdown({ groups }: { groups: TypeGroup[] }) {
         {
           type: "pie",
           radius: ["55%", "85%"],
-          itemStyle: { borderColor: "#121826", borderWidth: 3, borderRadius: 6 },
+          itemStyle: { borderColor: SURFACE, borderWidth: 3, borderRadius: 6 },
           label: { show: false },
           emphasis: { scale: true, scaleSize: 6 },
           data: groups.map((g) => ({ name: g.group, value: g.bytes })),
         },
       ],
     }),
-    [groups],
+    [groups, theme],
   );
   if (groups.length === 0) return <div className="py-8 text-center text-sm text-muted">No files.</div>;
   const shown = active ? groups.filter((g) => g.group === active) : groups;

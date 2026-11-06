@@ -230,7 +230,7 @@ export function DeleteModal() {
 
 function SummaryBox({ label, value, tone }: { label: string; value: string; tone?: "green" | "red" }) {
   return (
-    <div className="rounded-xl border border-line bg-panel-2/60 px-4 py-3">
+    <div className="rounded-[18px] border border-white/[0.06] bg-white/[0.03] px-4 py-3">
       <div className="text-[11px] uppercase tracking-wider text-muted">{label}</div>
       <div
         className={cx(

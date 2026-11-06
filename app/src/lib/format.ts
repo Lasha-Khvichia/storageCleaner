@@ -82,7 +82,7 @@ export const SAFETY: Record<
   },
   unknown: {
     label: "Unknown",
-    color: "#64748b",
+    color: "#7f6e62",
     text: "text-slate-400",
     bg: "bg-slate-500/10",
     border: "border-slate-500/30",

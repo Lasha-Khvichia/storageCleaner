@@ -49,22 +49,22 @@ export default function App() {
   useScanEvents();
   const page = useStore((s) => s.page);
   return (
-    <div className="flex h-full flex-col">
-      <TitleBar />
-      <div className="flex min-h-0 flex-1">
+    <div className="flex h-full">
+      <div data-tauri-drag-region className="flex p-3 pr-0">
         <Sidebar />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <PermanentBanner />
-          <main className="min-h-0 flex-1 overflow-y-auto px-8 pb-28 pt-7">
-            {page === "dashboard" && <Dashboard />}
-            {page === "explorer" && <Explorer />}
-            {page === "recommended" && <Recommended />}
-            {page === "suggestions" && <Suggestions />}
-            {page === "files" && <Files />}
-            {page === "history" && <HistoryPage />}
-            {page === "settings" && <Settings />}
-          </main>
-        </div>
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TitleBar />
+        <PermanentBanner />
+        <main className="min-h-0 flex-1 overflow-y-auto px-7 pb-28 pt-4">
+          {page === "dashboard" && <Dashboard />}
+          {page === "explorer" && <Explorer />}
+          {page === "recommended" && <Recommended />}
+          {page === "suggestions" && <Suggestions />}
+          {page === "files" && <Files />}
+          {page === "history" && <HistoryPage />}
+          {page === "settings" && <Settings />}
+        </main>
       </div>
       <SelectionTray />
       <DeleteModal />

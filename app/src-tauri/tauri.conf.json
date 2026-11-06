@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "storageCleaner",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "identifier": "com.lashakhvichia.storagecleaner",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -39,7 +39,10 @@
       "webviewInstallMode": { "type": "downloadBootstrapper" },
       "nsis": {
         "installMode": "both",
-        "displayLanguageSelector": false
+        "displayLanguageSelector": false,
+        "installerIcon": "icons/icon.ico",
+        "headerImage": "installer/header.bmp",
+        "sidebarImage": "installer/sidebar.bmp"
       }
     },
     "icon": [

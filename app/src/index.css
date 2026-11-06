@@ -1,39 +1,365 @@
 @import "tailwindcss";
 
+/* ════════════════════════════════════════════════════════════════════════
+ * storageCleaner design system
+ *
+ * Two layers (see docs/DESIGN_SYSTEM.md):
+ *
+ * 1. THEME TOKENS (`--sc-*`, bottom of this file): raw values per theme,
+ *    switched at runtime with <html data-theme="…">. A new theme is just one
+ *    more `[data-theme="name"]` block defining the same variables.
+ *
+ * 2. TAILWIND TOKENS (`@theme`, below): what components use (`bg-surface`,
+ *    `text-muted`, `rounded-card`, `indigo-500`…). They only point at the
+ *    theme tokens, so components never hard-code colours.
+ *
+ *    For historic reasons the components use Tailwind's `indigo` scale for
+ *    the accent, `cyan` for positive values and `slate` for neutrals; those
+ *    scales are remapped to the active theme's accent / positive / neutral.
+ * ════════════════════════════════════════════════════════════════════════ */
+
 @theme {
   --font-sans: "Inter", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
-  --color-bg: #0b0f17;
-  --color-panel: #121826;
-  --color-panel-2: #182032;
-  --color-line: #232c40;
-  --color-muted: #8a94ab;
-  --color-accent: #6d8bff;
+
+  /* Sizes */
+  --radius-card: 22px; /* cards, stat tiles */
+  --radius-panel: 24px; /* rail, modals */
+  --radius-control: 14px; /* rail buttons, inputs */
+  --radius-chip: 9999px; /* pills, buttons */
+
+  /* Semantic colours */
+  --color-bg: var(--sc-bg);
+  --color-fg: var(--sc-text);
+  --color-muted: var(--sc-text-muted);
+  --color-surface: var(--sc-surface);
+  --color-surface-raised: var(--sc-surface-raised);
+  --color-overlay: var(--sc-overlay);
+  --color-line: var(--sc-border);
+  --color-accent: var(--sc-accent-500);
+  --color-mint: var(--sc-positive-300);
+  /* legacy aliases */
+  --color-panel: var(--sc-surface);
+  --color-panel-2: var(--sc-surface-raised);
+
+  /* indigo → theme accent */
+  --color-indigo-50: var(--sc-accent-50);
+  --color-indigo-100: var(--sc-accent-100);
+  --color-indigo-200: var(--sc-accent-200);
+  --color-indigo-300: var(--sc-accent-300);
+  --color-indigo-400: var(--sc-accent-400);
+  --color-indigo-500: var(--sc-accent-500);
+  --color-indigo-600: var(--sc-accent-600);
+  --color-indigo-700: var(--sc-accent-700);
+  --color-indigo-800: var(--sc-accent-800);
+  --color-indigo-900: var(--sc-accent-900);
+  --color-indigo-950: var(--sc-accent-950);
+
+  /* cyan → theme positive */
+  --color-cyan-50: var(--sc-positive-50);
+  --color-cyan-100: var(--sc-positive-100);
+  --color-cyan-200: var(--sc-positive-200);
+  --color-cyan-300: var(--sc-positive-300);
+  --color-cyan-400: var(--sc-positive-400);
+  --color-cyan-500: var(--sc-positive-500);
+  --color-cyan-600: var(--sc-positive-600);
+  --color-cyan-700: var(--sc-positive-700);
+  --color-cyan-800: var(--sc-positive-800);
+  --color-cyan-900: var(--sc-positive-900);
+  --color-cyan-950: var(--sc-positive-950);
+
+  /* slate → theme neutrals */
+  --color-slate-50: var(--sc-neutral-50);
+  --color-slate-100: var(--sc-neutral-100);
+  --color-slate-200: var(--sc-neutral-200);
+  --color-slate-300: var(--sc-neutral-300);
+  --color-slate-400: var(--sc-neutral-400);
+  --color-slate-500: var(--sc-neutral-500);
+  --color-slate-600: var(--sc-neutral-600);
+  --color-slate-700: var(--sc-neutral-700);
+  --color-slate-800: var(--sc-neutral-800);
+  --color-slate-900: var(--sc-neutral-900);
+  --color-slate-950: var(--sc-neutral-950);
 }
 
-html, body, #root {
+/* ── Base ──────────────────────────────────────────────────────────────── */
+
+html,
+body,
+#root {
   height: 100%;
 }
 
 body {
   margin: 0;
-  background: var(--color-bg);
-  color: #e6e9f2;
+  color: var(--sc-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   user-select: none;
+  background:
+    radial-gradient(900px 520px at 12% -8%, var(--sc-glow-1), transparent 60%),
+    radial-gradient(700px 600px at 108% 105%, var(--sc-glow-2), transparent 60%),
+    var(--sc-bg);
+  background-attachment: fixed;
+  transition: background-color 0.3s;
 }
 
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: #2a3550; border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--sc-scrollbar);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
 
-.tabular { font-variant-numeric: tabular-nums; }
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Surfaces & controls (all values come from theme tokens) ──────────── */
+
+/* Glass surface: cards, the rail, stat tiles. */
+.glass {
+  background: linear-gradient(180deg, var(--sc-glass-top), var(--sc-glass-bottom));
+  border: 1px solid var(--sc-glass-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 18px 40px -18px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(14px);
+}
+
+/* Primary call-to-action: accent gradient with a soft glow. */
+.btn-primary {
+  background: linear-gradient(180deg, var(--sc-accent-400), var(--sc-accent-600));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 8px 22px -8px var(--sc-accent-glow);
+}
+.btn-primary:hover {
+  background: linear-gradient(180deg, var(--sc-accent-300), var(--sc-accent-500));
+}
 
 /* Indeterminate scan sweep along the bottom of the title bar. */
 @keyframes titlebar-sweep {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(300%); }
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
 }
 .titlebar-sweep {
   animation: titlebar-sweep 1.4s ease-in-out infinite;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * THEMES: every theme defines the same --sc-* variables.
+ * Register new ones in src/lib/theme.ts so they appear in Settings.
+ * ════════════════════════════════════════════════════════════════════════ */
+
+/* Ember (default): warm dark, orange accent, mint for positive values. */
+:root,
+[data-theme="ember"] {
+  --sc-bg: #0c0907;
+  --sc-surface: #17110e;
+  --sc-surface-raised: #201813;
+  --sc-overlay: #1d1612;
+  --sc-border: #2c221c;
+  --sc-text: #f3ece6;
+  --sc-text-muted: #a89688;
+  --sc-scrollbar: #3a2c23;
+  --sc-glass-top: rgba(36, 27, 21, 0.82);
+  --sc-glass-bottom: rgba(20, 15, 12, 0.82);
+  --sc-glass-border: rgba(255, 214, 186, 0.07);
+  --sc-glow-1: rgba(255, 122, 47, 0.16);
+  --sc-glow-2: rgba(255, 122, 47, 0.1);
+  --sc-accent-glow: rgba(255, 122, 47, 0.75);
+
+  --sc-accent-50: #fff4ec;
+  --sc-accent-100: #ffe4d0;
+  --sc-accent-200: #ffc9a3;
+  --sc-accent-300: #ffb16c;
+  --sc-accent-400: #ff9549;
+  --sc-accent-500: #ff7a2f;
+  --sc-accent-600: #f0601a;
+  --sc-accent-700: #c74a12;
+  --sc-accent-800: #9c3b14;
+  --sc-accent-900: #7d3214;
+  --sc-accent-950: #431707;
+
+  --sc-positive-50: #ecfdf6;
+  --sc-positive-100: #d1fae9;
+  --sc-positive-200: #a7f3d8;
+  --sc-positive-300: #6ee7b7;
+  --sc-positive-400: #4fd8a4;
+  --sc-positive-500: #2fbf8a;
+  --sc-positive-600: #22a074;
+  --sc-positive-700: #1b7f5d;
+  --sc-positive-800: #19654c;
+  --sc-positive-900: #165340;
+  --sc-positive-950: #0a2f23;
+
+  --sc-neutral-50: #faf7f5;
+  --sc-neutral-100: #f2ece8;
+  --sc-neutral-200: #e9e0d9;
+  --sc-neutral-300: #d2c4b9;
+  --sc-neutral-400: #a89688;
+  --sc-neutral-500: #7f6e62;
+  --sc-neutral-600: #5e5047;
+  --sc-neutral-700: #3f3530;
+  --sc-neutral-800: #2a221e;
+  --sc-neutral-900: #1a1512;
+  --sc-neutral-950: #0e0b09;
+
+  --sc-chart-1: #ff7a2f;
+  --sc-chart-2: #6ee7b7;
+  --sc-chart-3: #ffb16c;
+  --sc-chart-4: #f5a524;
+  --sc-chart-5: #fb7185;
+  --sc-chart-6: #c084fc;
+  --sc-chart-7: #fdba74;
+  --sc-chart-8: #34d399;
+  --sc-chart-text: #a89688;
+  --sc-chart-grid: #2c221c;
+  --sc-tooltip-bg: #fbf6f2;
+  --sc-tooltip-text: #1a130f;
+}
+
+/* Midnight: the original cool indigo / cyan look. */
+[data-theme="midnight"] {
+  --sc-bg: #0b0f17;
+  --sc-surface: #121826;
+  --sc-surface-raised: #182032;
+  --sc-overlay: #141b2b;
+  --sc-border: #232c40;
+  --sc-text: #e6e9f2;
+  --sc-text-muted: #8a94ab;
+  --sc-scrollbar: #2a3550;
+  --sc-glass-top: rgba(22, 29, 46, 0.85);
+  --sc-glass-bottom: rgba(14, 19, 31, 0.85);
+  --sc-glass-border: rgba(160, 180, 255, 0.08);
+  --sc-glow-1: rgba(99, 102, 241, 0.16);
+  --sc-glow-2: rgba(34, 211, 238, 0.08);
+  --sc-accent-glow: rgba(99, 102, 241, 0.7);
+
+  --sc-accent-50: #eef2ff;
+  --sc-accent-100: #e0e7ff;
+  --sc-accent-200: #c7d2fe;
+  --sc-accent-300: #a5b4fc;
+  --sc-accent-400: #818cf8;
+  --sc-accent-500: #6366f1;
+  --sc-accent-600: #4f46e5;
+  --sc-accent-700: #4338ca;
+  --sc-accent-800: #3730a3;
+  --sc-accent-900: #312e81;
+  --sc-accent-950: #1e1b4b;
+
+  --sc-positive-50: #ecfeff;
+  --sc-positive-100: #cffafe;
+  --sc-positive-200: #a5f3fc;
+  --sc-positive-300: #67e8f9;
+  --sc-positive-400: #22d3ee;
+  --sc-positive-500: #06b6d4;
+  --sc-positive-600: #0891b2;
+  --sc-positive-700: #0e7490;
+  --sc-positive-800: #155e75;
+  --sc-positive-900: #164e63;
+  --sc-positive-950: #083344;
+
+  --sc-neutral-50: #f8fafc;
+  --sc-neutral-100: #f1f5f9;
+  --sc-neutral-200: #e2e8f0;
+  --sc-neutral-300: #cbd5e1;
+  --sc-neutral-400: #94a3b8;
+  --sc-neutral-500: #64748b;
+  --sc-neutral-600: #475569;
+  --sc-neutral-700: #334155;
+  --sc-neutral-800: #1e293b;
+  --sc-neutral-900: #0f172a;
+  --sc-neutral-950: #020617;
+
+  --sc-chart-1: #6d8bff;
+  --sc-chart-2: #22d3ee;
+  --sc-chart-3: #a78bfa;
+  --sc-chart-4: #f472b6;
+  --sc-chart-5: #34d399;
+  --sc-chart-6: #fbbf24;
+  --sc-chart-7: #fb7185;
+  --sc-chart-8: #60a5fa;
+  --sc-chart-text: #8a94ab;
+  --sc-chart-grid: #232c40;
+  --sc-tooltip-bg: #0f1522;
+  --sc-tooltip-text: #e6e9f2;
+}
+
+/* Forest: deep green-black, emerald accent, amber highlights. */
+[data-theme="forest"] {
+  --sc-bg: #070b09;
+  --sc-surface: #0f1612;
+  --sc-surface-raised: #152019;
+  --sc-overlay: #121b16;
+  --sc-border: #1f2c24;
+  --sc-text: #e8f1eb;
+  --sc-text-muted: #8fa597;
+  --sc-scrollbar: #26382d;
+  --sc-glass-top: rgba(20, 31, 25, 0.85);
+  --sc-glass-bottom: rgba(11, 17, 14, 0.85);
+  --sc-glass-border: rgba(170, 255, 205, 0.07);
+  --sc-glow-1: rgba(52, 211, 153, 0.14);
+  --sc-glow-2: rgba(250, 204, 21, 0.06);
+  --sc-accent-glow: rgba(52, 211, 153, 0.6);
+
+  --sc-accent-50: #ecfdf5;
+  --sc-accent-100: #d1fae5;
+  --sc-accent-200: #a7f3d0;
+  --sc-accent-300: #6ee7b7;
+  --sc-accent-400: #34d399;
+  --sc-accent-500: #10b981;
+  --sc-accent-600: #059669;
+  --sc-accent-700: #047857;
+  --sc-accent-800: #065f46;
+  --sc-accent-900: #064e3b;
+  --sc-accent-950: #022c22;
+
+  --sc-positive-50: #fefce8;
+  --sc-positive-100: #fef9c3;
+  --sc-positive-200: #fef08a;
+  --sc-positive-300: #fde047;
+  --sc-positive-400: #facc15;
+  --sc-positive-500: #eab308;
+  --sc-positive-600: #ca8a04;
+  --sc-positive-700: #a16207;
+  --sc-positive-800: #854d0e;
+  --sc-positive-900: #713f12;
+  --sc-positive-950: #422006;
+
+  --sc-neutral-50: #f6faf7;
+  --sc-neutral-100: #e9f2ec;
+  --sc-neutral-200: #d5e3da;
+  --sc-neutral-300: #b4c8bb;
+  --sc-neutral-400: #8fa597;
+  --sc-neutral-500: #6b8273;
+  --sc-neutral-600: #4f6357;
+  --sc-neutral-700: #35443b;
+  --sc-neutral-800: #222d27;
+  --sc-neutral-900: #141b17;
+  --sc-neutral-950: #0a0f0c;
+
+  --sc-chart-1: #34d399;
+  --sc-chart-2: #facc15;
+  --sc-chart-3: #6ee7b7;
+  --sc-chart-4: #fb923c;
+  --sc-chart-5: #f87171;
+  --sc-chart-6: #a3e635;
+  --sc-chart-7: #fde68a;
+  --sc-chart-8: #2dd4bf;
+  --sc-chart-text: #8fa597;
+  --sc-chart-grid: #1f2c24;
+  --sc-tooltip-bg: #f2f8f4;
+  --sc-tooltip-text: #0f1612;
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { AlertTriangle, HardDrive, Minus, Square, X } from "lucide-react";
+import { AlertTriangle, Minus, Square, X } from "lucide-react";
+import { RecycleBinPill } from "./RecycleBin";
 import { api, type DiskInfo } from "../api";
 import { cx, formatBytes } from "../lib/format";
 import { useStore, type Page } from "../store";
@@ -66,18 +67,15 @@ export function TitleBar() {
   return (
     <header
       data-tauri-drag-region
-      className="relative flex h-11 shrink-0 select-none items-center gap-3 border-b border-line bg-gradient-to-r from-[#0d1220] via-[#10172a] to-[#0d1220] pl-4"
+      className="relative flex h-12 shrink-0 select-none items-center gap-2.5 pl-5"
     >
-      {/* Brand */}
-      <div data-tauri-drag-region className="flex items-center gap-2.5">
-        <div className="relative flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-400 shadow-md shadow-indigo-500/40">
-          <HardDrive className="h-3.5 w-3.5 text-white" />
-          {scan.running && <span className="absolute -right-0.5 -top-0.5 h-2 w-2 animate-ping rounded-full bg-cyan-300" />}
-        </div>
+      {/* Brand (the logo lives at the top of the rail) */}
+      <div data-tauri-drag-region className="flex items-center gap-2.5 pl-2">
+        {scan.running && <span className="h-2 w-2 animate-ping rounded-full bg-mint" />}
         <span data-tauri-drag-region className="text-[13px] font-bold tracking-tight">
-          storage<span className="bg-gradient-to-r from-indigo-300 to-cyan-300 bg-clip-text text-transparent">Cleaner</span>
+          storage<span className="bg-gradient-to-r from-indigo-300 to-indigo-500 bg-clip-text text-transparent">Cleaner</span>
         </span>
-        <span data-tauri-drag-region className="text-line">/</span>
+        <span data-tauri-drag-region className="text-slate-600">/</span>
         <span data-tauri-drag-region className="text-[13px] text-muted">
           {PAGE_TITLES[page]}
         </span>
@@ -86,13 +84,14 @@ export function TitleBar() {
       <div data-tauri-drag-region className="flex-1" />
 
       {/* Live status chips */}
+      <RecycleBinPill />
       {permanent && (
-        <span className="flex items-center gap-1.5 rounded-full border border-red-500/50 bg-red-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-red-300">
+        <span className="flex h-8 items-center gap-1.5 rounded-full border border-red-500/50 bg-red-500/15 px-3 text-[11px] font-semibold text-red-300">
           <AlertTriangle className="h-3 w-3" /> Permanent delete ON
         </span>
       )}
       {scan.running && (
-        <span className="tabular rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-0.5 text-[11px] font-medium text-cyan-200">
+        <span className="tabular flex h-8 items-center rounded-full border border-cyan-500/40 bg-cyan-500/10 px-3 text-[11px] font-medium text-cyan-200">
           Scanning{progress !== null ? ` ${Math.round(progress * 100)}%` : "…"}
         </span>
       )}
@@ -100,7 +99,7 @@ export function TitleBar() {
         <span
           title={`${disk.mount} ${formatBytes(disk.freeBytes)} free of ${formatBytes(disk.totalBytes)}`}
           className={cx(
-            "tabular flex items-center gap-2 rounded-full border px-2.5 py-0.5 text-[11px] font-medium",
+            "tabular flex h-8 items-center gap-2 rounded-full border px-3 text-[11px] font-medium",
             tone === "red" && "border-red-500/40 bg-red-500/10 text-red-300",
             tone === "amber" && "border-amber-500/40 bg-amber-500/10 text-amber-200",
             tone === "emerald" && "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
@@ -166,7 +165,7 @@ function WinButton({
       title={label}
       onClick={onClick}
       className={cx(
-        "group flex w-12 items-center justify-center text-slate-400 transition-colors",
+        "group flex w-12 items-center justify-center text-slate-400 transition-colors first:ml-1",
         danger ? "hover:bg-red-500 hover:text-white" : "hover:bg-white/[0.07] hover:text-slate-100",
       )}
     >

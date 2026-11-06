@@ -28,3 +28,6 @@ app/src-tauri/gen/schemas/
 
 # Docker build output
 dist-linux/
+
+# Branding previews (regenerate with scripts/branding/make-assets.ps1)
+scripts/branding/out/*-preview.png

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { api, errorMessage, type NodeView, type TreemapNode } from "../api";
-import { Chart, tooltipBase } from "../components/Chart";
+import { Chart, useChartTheme } from "../components/Chart";
 import { PageHeader } from "../components/Layout";
 import { NodeTable } from "../components/NodeTable";
 import { Button, Card, Meter, SafetyBadge, Spinner, Stat, useAsync } from "../components/ui";
@@ -52,7 +52,7 @@ function ScanTargetPicker() {
             <button
               key={d.mount}
               onClick={() => startScan(d.mount, d.usedBytes)}
-              className="group rounded-2xl border border-line bg-panel p-5 text-left transition hover:border-indigo-400/60 hover:bg-panel-2"
+              className="glass group rounded-card p-5 text-left transition hover:border-indigo-400/50"
             >
               <div className="flex items-center gap-3">
                 <div className="rounded-xl bg-indigo-500/15 p-2.5 text-indigo-300">
@@ -64,7 +64,7 @@ function ScanTargetPicker() {
                 </div>
                 <ScanSearch className="ml-auto h-5 w-5 text-slate-500 group-hover:text-indigo-300" />
               </div>
-              <Meter share={share} className="mt-4" color={share > 0.9 ? "#ef4444" : share > 0.75 ? "#f59e0b" : "#6d8bff"} />
+              <Meter share={share} className="mt-4" color={share > 0.9 ? "#ef4444" : share > 0.75 ? "#f59e0b" : "var(--sc-accent-500)"} />
               <div className="tabular mt-2 text-xs text-muted">
                 {formatBytes(d.usedBytes)} used · {formatBytes(d.freeBytes)} free
               </div>
@@ -73,7 +73,7 @@ function ScanTargetPicker() {
         })}
         <button
           onClick={pickFolder}
-          className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-line p-5 text-muted transition hover:border-indigo-400/60 hover:text-slate-200"
+          className="flex flex-col items-center justify-center gap-2 rounded-card border border-dashed border-line p-5 text-muted transition hover:border-indigo-400/60 hover:text-slate-200"
         >
           <FolderSearch className="h-6 w-6" />
           <span className="text-sm font-medium">Choose a folder…</span>
@@ -100,7 +100,7 @@ function ScanProgressView() {
           <div className="grid flex-1 grid-cols-4 gap-3">
             <Stat label="Files" value={formatCount(p?.files ?? 0)} />
             <Stat label="Folders" value={formatCount(p?.dirs ?? 0)} />
-            <Stat label="Size found" value={formatBytes(p?.bytes ?? 0)} accent="#6d8bff" />
+            <Stat label="Size found" value={formatBytes(p?.bytes ?? 0)} accent="var(--sc-accent-500)" />
             <Stat label="Unreadable" value={formatCount(p?.errors ?? 0)} sub="access denied etc." />
           </div>
         </div>
@@ -206,7 +206,7 @@ function Browser() {
       />
 
       {totalBytes > 0 && (
-        <div className="mb-5 rounded-2xl border border-line bg-panel p-4">
+        <div className="glass mb-5 rounded-card p-4">
           <div className="mb-2 flex items-center justify-between text-xs text-muted">
             <span className="font-medium uppercase tracking-wider">Safety breakdown of all scanned files</span>
             <span className="flex gap-4">
@@ -287,6 +287,7 @@ function Browser() {
 }
 
 function Treemap({ data, onOpen }: { data: TreemapNode; onOpen: (id: number) => void }) {
+  const { tooltipBase, theme, BG, SURFACE, RAISED, TEXT } = useChartTheme();
   const option = useMemo(() => {
     const convert = (t: TreemapNode, depth: number): Record<string, unknown> => ({
       name: t.name,
@@ -296,8 +297,8 @@ function Treemap({ data, onOpen }: { data: TreemapNode; onOpen: (id: number) => 
       isDir: t.isDir,
       safety: t.safety,
       itemStyle: {
-        color: t.id === null ? "#1e293b" : depth === 0 ? undefined : SAFETY[t.safety].color + (t.isDir ? "cc" : "99"),
-        borderColor: "#0b0f17",
+        color: t.id === null ? RAISED : depth === 0 ? undefined : SAFETY[t.safety].color + (t.isDir ? "cc" : "99"),
+        borderColor: BG,
       },
       children: t.children?.map((c) => convert(c, depth + 1)),
     });
@@ -308,7 +309,7 @@ function Treemap({ data, onOpen }: { data: TreemapNode; onOpen: (id: number) => 
         formatter: (p: any) =>
           `<b>${p.name}</b><br/>${formatBytes(p.value)}` +
           (p.data?.safety ? `<br/><span style="color:${SAFETY[p.data.safety as keyof typeof SAFETY].color}">${SAFETY[p.data.safety as keyof typeof SAFETY].label}</span>` : "") +
-          (p.data?.isDir ? `<br/><span style="color:#8a94ab">Click to open</span>` : ""),
+          (p.data?.isDir ? `<br/><span style="color:var(--sc-chart-text)">Click to open</span>` : ""),
       },
       series: [
         {
@@ -323,17 +324,17 @@ function Treemap({ data, onOpen }: { data: TreemapNode; onOpen: (id: number) => 
           right: 0,
           bottom: 0,
           label: { show: true, formatter: "{b}", color: "#fff", fontSize: 11, overflow: "truncate" },
-          upperLabel: { show: true, height: 20, color: "#e6e9f2", fontSize: 11, backgroundColor: "transparent" },
+          upperLabel: { show: true, height: 20, color: TEXT, fontSize: 11, backgroundColor: "transparent" },
           levels: [
             { itemStyle: { borderWidth: 0, gapWidth: 3 } },
-            { itemStyle: { borderWidth: 3, gapWidth: 1, borderColor: "#121826" } },
+            { itemStyle: { borderWidth: 3, gapWidth: 1, borderColor: SURFACE } },
             { itemStyle: { borderWidth: 1, gapWidth: 1 }, colorSaturation: [0.35, 0.6] },
           ],
           data: (data.children ?? []).map((c) => convert(c, 1)),
         },
       ],
     };
-  }, [data]);
+  }, [data, theme]);
 
   return (
     <Chart

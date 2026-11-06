@@ -43,7 +43,7 @@ export function Suggestions() {
         title="Suggestions"
         subtitle={`What can most likely be removed from ${info.root.path}, grouped by kind.`}
         actions={
-          <label className="flex items-center gap-3 rounded-lg border border-line bg-panel px-3 py-2 text-sm">
+          <label className="flex items-center gap-3 rounded-full border border-white/[0.08] bg-white/[0.04] px-4 py-2 text-sm">
             <Toggle checked={includeReview} onChange={setIncludeReview} />
             Include items that need review
           </label>
@@ -51,12 +51,12 @@ export function Suggestions() {
       />
 
       <div className="mb-6 grid grid-cols-2 gap-4">
-        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5">
+        <div className="rounded-card border border-emerald-500/30 bg-emerald-500/10 p-5">
           <div className="text-xs font-medium uppercase tracking-wider text-emerald-300/80">Safe to delete</div>
           <div className="tabular mt-1 text-3xl font-bold text-emerald-300">{formatBytes(safeTotal)}</div>
           <div className="mt-1 text-sm text-emerald-100/70">Rebuilt automatically or never needed again.</div>
         </div>
-        <div className={cx("rounded-2xl border p-5", includeReview ? "border-amber-500/30 bg-amber-500/10" : "border-line bg-panel")}>
+        <div className={cx("rounded-card border p-5", includeReview ? "border-amber-500/30 bg-amber-500/10" : "border-line bg-panel")}>
           <div className="text-xs font-medium uppercase tracking-wider text-amber-300/80">Needs your review</div>
           <div className="tabular mt-1 text-3xl font-bold text-amber-300">{includeReview ? formatBytes(reviewTotal) : "—"}</div>
           <div className="mt-1 text-sm text-muted">

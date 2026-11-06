@@ -49,7 +49,7 @@ export function HistoryPage() {
         }
       />
       <div className="mb-6 grid grid-cols-3 gap-4">
-        <Stat label="Total freed" value={formatBytes(totals.data?.freedBytes ?? 0)} accent="#22c55e" />
+        <Stat label="Total freed" value={formatBytes(totals.data?.freedBytes ?? 0)} accent="var(--sc-positive-300)" />
         <Stat label="Cleanups" value={totals.data?.runs ?? 0} />
         <Stat label="Items removed" value={formatCount(totals.data?.itemsDeleted ?? 0)} />
       </div>

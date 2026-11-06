@@ -19,10 +19,10 @@ export function Card({
   bodyClassName?: string;
 }) {
   return (
-    <section className={cx("rounded-2xl border border-line bg-panel shadow-lg shadow-black/20", className)}>
+    <section className={cx("glass rounded-card", className)}>
       {(title || actions) && (
-        <header className="flex items-center justify-between gap-3 border-b border-line px-5 py-3.5">
-          <h2 className="flex items-center gap-2 text-sm font-semibold tracking-wide text-slate-200">
+        <header className="flex items-center justify-between gap-3 border-b border-white/[0.05] px-5 py-4">
+          <h2 className="flex items-center gap-2 text-[15px] font-semibold text-slate-100">
             {icon}
             {title}
           </h2>
@@ -49,19 +49,19 @@ export function Button({
   loading?: boolean;
 }) {
   const variants: Record<ButtonVariant, string> = {
-    primary: "bg-accent text-white hover:bg-indigo-400 shadow shadow-indigo-500/20",
-    secondary: "bg-panel-2 text-slate-200 border border-line hover:bg-[#1f2940]",
-    ghost: "text-slate-300 hover:bg-white/5",
-    danger: "bg-red-600 text-white hover:bg-red-500 shadow shadow-red-600/30",
-    success: "bg-emerald-600 text-white hover:bg-emerald-500",
+    primary: "btn-primary text-white",
+    secondary: "bg-white/[0.04] text-slate-200 border border-white/[0.08] hover:bg-white/[0.08]",
+    ghost: "text-slate-300 hover:bg-white/[0.06]",
+    danger: "bg-gradient-to-b from-red-500 to-red-600 text-white hover:from-red-400 shadow-[0_8px_22px_-8px_rgba(239,68,68,.7)]",
+    success: "bg-gradient-to-b from-emerald-400 to-emerald-600 text-white hover:from-emerald-300",
   };
-  const sizes = { sm: "h-8 px-3 text-xs", md: "h-9 px-4 text-sm", lg: "h-11 px-5 text-sm" };
+  const sizes = { sm: "h-8 px-3.5 text-xs", md: "h-10 px-5 text-sm", lg: "h-12 px-6 text-sm" };
   return (
     <button
       {...rest}
       disabled={rest.disabled || loading}
       className={cx(
-        "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors",
+        "inline-flex items-center justify-center gap-2 rounded-full font-medium transition-all active:scale-[0.98]",
         "disabled:cursor-not-allowed disabled:opacity-40",
         variants[variant],
         sizes[size],
@@ -161,8 +161,8 @@ export function Toggle({
 export function Meter({ share, color, className }: { share: number; color?: string; className?: string }) {
   const pct = Math.max(0, Math.min(1, share)) * 100;
   return (
-    <div className={cx("h-1.5 w-full overflow-hidden rounded-full bg-slate-800", className)}>
-      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color ?? "#6d8bff" }} />
+    <div className={cx("h-1.5 w-full overflow-hidden rounded-full bg-white/[0.07]", className)}>
+      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color ?? "linear-gradient(90deg,var(--sc-accent-300),var(--sc-accent-500))" }} />
     </div>
   );
 }
@@ -196,15 +196,15 @@ export function Modal({
       <div
         onMouseDown={(e) => e.stopPropagation()}
         className={cx(
-          "flex max-h-[90vh] w-full flex-col rounded-2xl border bg-panel shadow-2xl",
+          "flex max-h-[90vh] w-full flex-col rounded-panel border bg-gradient-to-b from-surface-raised to-surface shadow-2xl shadow-black/60",
           wide ? "max-w-4xl" : "max-w-lg",
-          danger ? "border-red-500/60 shadow-red-900/40" : "border-line",
+          danger ? "border-red-500/60 shadow-red-900/40" : "border-white/[0.08]",
         )}
       >
         <header
           className={cx(
-            "flex items-center justify-between gap-3 rounded-t-2xl border-b px-6 py-4",
-            danger ? "border-red-500/40 bg-red-950/40" : "border-line",
+            "flex items-center justify-between gap-3 rounded-t-panel border-b px-6 py-4",
+            danger ? "border-red-500/40 bg-red-950/40" : "border-white/[0.06]",
           )}
         >
           <h3 className="flex items-center gap-2 text-base font-semibold">{title}</h3>
@@ -213,7 +213,7 @@ export function Modal({
           </button>
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">{children}</div>
-        {footer && <footer className="flex items-center justify-end gap-3 border-t border-line px-6 py-4">{footer}</footer>}
+        {footer && <footer className="flex items-center justify-end gap-3 border-t border-white/[0.06] px-6 py-4">{footer}</footer>}
       </div>
     </div>
   );
@@ -222,7 +222,7 @@ export function Modal({
 export function Empty({ icon, title, children }: { icon: ReactNode; title: string; children?: ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-      <div className="rounded-2xl bg-panel-2 p-4 text-slate-400">{icon}</div>
+      <div className="rounded-card border border-indigo-500/20 bg-indigo-500/10 p-4 text-indigo-300">{icon}</div>
       <div className="text-base font-semibold text-slate-200">{title}</div>
       {children && <div className="max-w-md text-sm text-muted">{children}</div>}
     </div>
@@ -239,9 +239,9 @@ export function Spinner({ label }: { label?: string }) {
 
 export function Stat({ label, value, sub, accent }: { label: string; value: ReactNode; sub?: ReactNode; accent?: string }) {
   return (
-    <div className="rounded-xl border border-line bg-panel-2/60 px-4 py-3">
-      <div className="text-[11px] font-medium uppercase tracking-wider text-muted">{label}</div>
-      <div className="tabular mt-1 text-xl font-semibold" style={accent ? { color: accent } : undefined}>
+    <div className="glass rounded-card px-5 py-4">
+      <div className="text-xs font-medium text-muted">{label}</div>
+      <div className="tabular mt-1.5 text-2xl font-bold tracking-tight" style={accent ? { color: accent } : undefined}>
         {value}
       </div>
       {sub && <div className="mt-0.5 text-xs text-muted">{sub}</div>}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ask } from "@tauri-apps/plugin-dialog";
-import { Recycle, Trash } from "lucide-react";
+import { Loader2, Recycle, Trash } from "lucide-react";
 import { api, errorMessage, type RecycleBinInfo } from "../api";
 import { cx, formatBytes, formatCount } from "../lib/format";
 import { useStore } from "../store";
@@ -58,40 +58,35 @@ function useEmptyBin() {
   return { empty, busy };
 }
 
-/** Always-visible sidebar widget. */
-export function RecycleBinWidget() {
+/** Always-visible Recycle Bin pill in the top bar. */
+export function RecycleBinPill() {
   const info = useRecycleBin();
   const { empty, busy } = useEmptyBin();
   const full = !!info && info.items > 0;
   return (
     <div
+      title={info ? `${formatCount(info.items)} items in the Recycle Bin` : "Recycle Bin"}
       className={cx(
-        "mx-3 mb-3 rounded-xl border p-3 transition-colors",
-        full ? "border-amber-500/40 bg-gradient-to-br from-amber-500/15 to-orange-500/5" : "border-line bg-panel",
+        "flex h-8 items-center gap-2 rounded-full border pl-3 pr-1 text-xs transition-colors",
+        full ? "border-indigo-500/40 bg-indigo-500/10" : "border-white/[0.08] bg-white/[0.04]",
       )}
     >
-      <div className="flex items-center gap-2.5">
-        <div className={cx("rounded-lg p-2", full ? "bg-amber-500/20 text-amber-300" : "bg-white/5 text-slate-400")}>
-          <Recycle className="h-4 w-4" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-xs font-medium text-slate-300">Recycle Bin</div>
-          <div className={cx("tabular text-base font-bold leading-tight", full ? "text-amber-200" : "text-slate-400")}>
-            {info ? formatBytes(info.bytes) : "…"}
-          </div>
-        </div>
-        {info && <div className="text-[11px] text-muted">{formatCount(info.items)} items</div>}
-      </div>
-      <Button
-        size="sm"
-        variant={full ? "danger" : "secondary"}
-        className="mt-2.5 w-full"
-        disabled={!full}
-        loading={busy}
+      <Recycle className={cx("h-3.5 w-3.5", full ? "text-indigo-300" : "text-slate-500")} />
+      <span className="text-slate-400">Recycle Bin</span>
+      <span className={cx("tabular font-semibold", full ? "text-indigo-200" : "text-slate-500")}>
+        {info ? formatBytes(info.bytes) : "…"}
+      </span>
+      <button
+        disabled={!full || busy}
         onClick={() => info && empty(info, null)}
+        className={cx(
+          "flex h-6 items-center gap-1 rounded-full px-2.5 text-[11px] font-semibold transition-all",
+          full ? "btn-primary text-white" : "cursor-not-allowed text-slate-600",
+        )}
       >
-        <Trash className="h-3.5 w-3.5" /> {full ? "Empty Recycle Bin" : "Recycle Bin is empty"}
-      </Button>
+        {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash className="h-3 w-3" />}
+        Empty
+      </button>
     </div>
   );
 }
@@ -126,7 +121,7 @@ export function RecycleBinCard() {
           </div>
           <div className="ml-auto flex flex-wrap gap-2">
             {info.drives.map((d) => (
-              <div key={d.drive} className="flex items-center gap-3 rounded-xl border border-line bg-panel-2 px-3 py-2">
+              <div key={d.drive} className="flex items-center gap-3 rounded-[16px] border border-white/[0.06] bg-white/[0.03] px-3 py-2">
                 <div>
                   <div className="text-xs text-muted">{d.drive}</div>
                   <div className="tabular font-semibold">{formatBytes(d.bytes)}</div>

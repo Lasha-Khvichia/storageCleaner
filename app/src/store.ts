@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { NodeView, SafetyLevel, ScanInfo, ScanProgress } from "./api";
+import { applyTheme, storedTheme } from "./lib/theme";
 
 export type Page = "dashboard" | "explorer" | "recommended" | "suggestions" | "files" | "history" | "settings";
 
@@ -40,6 +41,10 @@ interface AppStore {
   page: Page;
   setPage: (p: Page) => void;
 
+  /** Active theme id (see lib/theme.ts). */
+  theme: string;
+  setTheme: (id: string) => void;
+
   /** Node currently shown in the explorer. */
   currentDir: number;
   setCurrentDir: (id: number) => void;
@@ -72,6 +77,12 @@ let toastSeq = 1;
 export const useStore = create<AppStore>((set, get) => ({
   page: "dashboard",
   setPage: (page) => set({ page }),
+
+  theme: storedTheme(),
+  setTheme: (theme) => {
+    applyTheme(theme);
+    set({ theme });
+  },
 
   currentDir: 0,
   setCurrentDir: (currentDir) => set({ currentDir }),

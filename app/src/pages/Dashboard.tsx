@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Activity, ArrowRight, Camera, HardDrive, RefreshCw, ScanSearch, Sparkles, Usb } from "lucide-react";
 import { api, type DiskInfo, type SpaceSnapshot } from "../api";
-import { Chart, CHART_LINE, CHART_TEXT, SERIES_COLORS, tooltipBase } from "../components/Chart";
+import { Chart, useChartTheme } from "../components/Chart";
 import { PageHeader } from "../components/Layout";
 import { RecycleBinCard } from "../components/RecycleBin";
 import { Button, Card, Empty, Spinner, Stat, useAsync } from "../components/ui";
@@ -49,12 +49,12 @@ export function Dashboard() {
       />
 
       <div className="mb-6 grid grid-cols-4 gap-4">
-        <Stat label="Free space (all drives)" value={formatBytes(totalFree)} sub={`of ${formatBytes(totalSize)}`} accent="#6d8bff" />
+        <Stat label="Free space (all drives)" value={formatBytes(totalFree)} sub={`of ${formatBytes(totalSize)}`} accent="var(--sc-accent-500)" />
         <Stat
           label="Freed by storageCleaner"
           value={formatBytes(totals.data?.freedBytes ?? 0)}
           sub={`${totals.data?.itemsDeleted ?? 0} items removed`}
-          accent="#22c55e"
+          accent="var(--sc-positive-300)"
         />
         <Stat
           label="Cleanups"
@@ -65,14 +65,14 @@ export function Dashboard() {
           label="Safe to free now"
           value={scanInfo ? formatBytes(safeBytes) : "—"}
           sub={scanInfo ? `from scan of ${scanInfo.root.path}` : "run a scan to find out"}
-          accent="#22c55e"
+          accent="var(--sc-positive-300)"
         />
       </div>
 
       {scanInfo && safeBytes > 0 && (
         <button
           onClick={() => setPage("suggestions")}
-          className="mb-6 flex w-full items-center gap-4 rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/15 via-emerald-500/5 to-transparent px-6 py-5 text-left transition hover:border-emerald-400/60"
+          className="mb-6 flex w-full items-center gap-4 rounded-card border border-emerald-500/30 bg-gradient-to-r from-emerald-500/15 via-emerald-500/5 to-transparent px-6 py-5 text-left transition hover:border-emerald-400/60"
         >
           <div className="rounded-xl bg-emerald-500/20 p-3">
             <Sparkles className="h-6 w-6 text-emerald-300" />
@@ -109,7 +109,7 @@ export function Dashboard() {
         icon={<Activity className="h-4 w-4 text-indigo-300" />}
         actions={
           <>
-            <div className="flex rounded-lg border border-line bg-panel-2 p-0.5">
+            <div className="flex rounded-full border border-white/[0.08] bg-white/[0.04] p-0.5">
               {RANGES.map((r) => (
                 <button
                   key={r}
@@ -148,19 +148,19 @@ export function Dashboard() {
 
 function DiskCard({ disk }: { disk: DiskInfo }) {
   const share = disk.totalBytes ? disk.usedBytes / disk.totalBytes : 0;
-  const color = share > 0.9 ? "#ef4444" : share > 0.75 ? "#f59e0b" : "#6d8bff";
+  const color = share > 0.9 ? "#ef4444" : share > 0.75 ? "#f59e0b" : "var(--sc-accent-500)";
   const r = 34;
   const c = 2 * Math.PI * r;
   return (
-    <div className="flex items-center gap-5 rounded-2xl border border-line bg-panel p-5">
+    <div className="glass flex items-center gap-5 rounded-card p-5">
       <div className="relative h-20 w-20 shrink-0">
         <svg viewBox="0 0 80 80" className="h-20 w-20 -rotate-90">
-          <circle cx="40" cy="40" r={r} stroke="#1e273a" strokeWidth="8" fill="none" />
+          <circle cx="40" cy="40" r={r} style={{ stroke: "var(--sc-surface-raised)" }} strokeWidth="8" fill="none" />
           <circle
             cx="40"
             cy="40"
             r={r}
-            stroke={color}
+            style={{ stroke: color }}
             strokeWidth="8"
             fill="none"
             strokeLinecap="round"
@@ -191,6 +191,7 @@ function DiskCard({ disk }: { disk: DiskInfo }) {
 }
 
 function SpaceChart({ snapshots }: { snapshots: SpaceSnapshot[] }) {
+  const { SERIES_COLORS, CHART_TEXT, CHART_LINE, POSITIVE, BG, RAISED, ACCENT, tooltipBase, theme } = useChartTheme();
   const option = useMemo(() => {
     const byMount = new Map<string, SpaceSnapshot[]>();
     for (const s of snapshots) {
@@ -225,8 +226,8 @@ function SpaceChart({ snapshots }: { snapshots: SpaceSnapshot[] }) {
         markPoint: {
           symbol: "pin",
           symbolSize: 34,
-          itemStyle: { color: "#22c55e" },
-          label: { formatter: "✓", color: "#fff", fontSize: 11 },
+          itemStyle: { color: POSITIVE },
+          label: { formatter: "✓", color: BG, fontSize: 11, fontWeight: "bold" },
           data: list
             .filter((s) => s.trigger === "cleanup")
             .map((s) => ({ coord: [s.takenAt * 1000, s.freeBytes], name: "Cleanup" })),
@@ -249,7 +250,7 @@ function SpaceChart({ snapshots }: { snapshots: SpaceSnapshot[] }) {
             .map(
               (p) =>
                 `${p.marker} <b>${p.seriesName}</b> ${formatBytes(p.value[1])} free` +
-                (p.value[2] !== "auto" ? ` <span style="color:#8a94ab">(${p.value[2]})</span>` : ""),
+                (p.value[2] !== "auto" ? ` <span style="color:var(--sc-chart-text)">(${p.value[2]})</span>` : ""),
             )
             .join("<br/>");
           return `${head}<br/>${rows}`;
@@ -266,9 +267,24 @@ function SpaceChart({ snapshots }: { snapshots: SpaceSnapshot[] }) {
         axisLabel: { color: CHART_TEXT, formatter: (v: number) => formatBytes(v) },
         splitLine: { lineStyle: { color: CHART_LINE, type: "dashed" } },
       },
-      dataZoom: [{ type: "inside" }, { type: "slider", height: 18, bottom: 8, borderColor: CHART_LINE, textStyle: { color: CHART_TEXT } }],
+      dataZoom: [
+        { type: "inside" },
+        {
+          type: "slider",
+          height: 18,
+          bottom: 8,
+          borderColor: "transparent",
+          backgroundColor: RAISED,
+          fillerColor: ACCENT + "33",
+          dataBackground: { lineStyle: { color: ACCENT, opacity: 0.5 }, areaStyle: { color: ACCENT, opacity: 0.15 } },
+          selectedDataBackground: { lineStyle: { color: ACCENT }, areaStyle: { color: ACCENT, opacity: 0.3 } },
+          handleStyle: { color: ACCENT, borderColor: ACCENT },
+          moveHandleStyle: { color: ACCENT, opacity: 0.6 },
+          textStyle: { color: CHART_TEXT },
+        },
+      ],
       series,
     };
-  }, [snapshots]);
+  }, [snapshots, theme]);
   return <Chart option={option} style={{ height: 340 }} />;
 }

@@ -153,8 +153,8 @@ function Hero({ plan, items }: { plan: CleanupPlan; items: Recommendation[] }) {
   const { selected, all, select } = useSelectPlan(plan, items);
   const s = SAFETY[plan.risk];
   return (
-    <div className="mb-5 flex items-center gap-6 rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-indigo-500/15 via-cyan-500/10 to-transparent p-6">
-      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-400 shadow-lg shadow-indigo-500/30">
+    <div className="mb-5 flex items-center gap-6 rounded-card border border-indigo-500/30 bg-gradient-to-r from-indigo-500/15 via-cyan-500/10 to-transparent p-6">
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-card bg-gradient-to-br from-indigo-500 to-cyan-400 shadow-lg shadow-indigo-500/30">
         <Target className="h-7 w-7 text-white" />
       </div>
       <div className="min-w-0 flex-1">
@@ -193,7 +193,7 @@ function PlanCard({
   return (
     <div
       className={cx(
-        "flex flex-col rounded-2xl border bg-panel p-4 transition-colors",
+        "flex flex-col rounded-card border bg-panel p-4 transition-colors",
         active ? "border-indigo-400/60 ring-1 ring-indigo-400/40" : "border-line",
       )}
     >
@@ -217,10 +217,10 @@ function PlanCard({
 }
 
 function scoreColor(score: number): string {
-  if (score >= 75) return "#22d3ee";
-  if (score >= 55) return "#818cf8";
-  if (score >= 40) return "#a78bfa";
-  return "#64748b";
+  if (score >= 75) return "var(--sc-positive-300)";
+  if (score >= 55) return "var(--sc-accent-300)";
+  if (score >= 40) return "var(--sc-accent-500)";
+  return "var(--sc-neutral-500)";
 }
 
 function ScoreRing({ score }: { score: number }) {
@@ -230,13 +230,13 @@ function ScoreRing({ score }: { score: number }) {
   return (
     <div className="relative h-11 w-11 shrink-0" title={`Recommendation score ${score}/100`}>
       <svg viewBox="0 0 44 44" className="h-11 w-11 -rotate-90">
-        <circle cx="22" cy="22" r={r} fill="none" stroke="#1e2638" strokeWidth="4" />
+        <circle cx="22" cy="22" r={r} fill="none" style={{ stroke: "var(--sc-surface-raised)" }} strokeWidth="4" />
         <circle
           cx="22"
           cy="22"
           r={r}
           fill="none"
-          stroke={color}
+          style={{ stroke: color }}
           strokeWidth="4"
           strokeLinecap="round"
           strokeDasharray={`${(score / 100) * c} ${c}`}
@@ -312,7 +312,7 @@ function Row({ rec, maxSize }: { rec: Recommendation; maxSize: number }) {
 function HowItWorks() {
   const [open, setOpen] = useState(false);
   return (
-    <div className="mb-5 rounded-2xl border border-line bg-panel">
+    <div className="glass mb-5 rounded-card">
       <button className="flex w-full items-center gap-2 px-5 py-3 text-left text-sm text-slate-300" onClick={() => setOpen((o) => !o)}>
         {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         <HelpCircle className="h-4 w-4 text-muted" />

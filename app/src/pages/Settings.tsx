@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { AlertTriangle, Lock, ShieldCheck, Trash2 } from "lucide-react";
+import { AlertTriangle, Check, Lock, Palette, ShieldCheck, Trash2 } from "lucide-react";
+import { cx } from "../lib/format";
+import { THEMES } from "../lib/theme";
 import { PageHeader } from "../components/Layout";
 import { Button, Card, Modal, SafetyBadge, Toggle } from "../components/ui";
 import { useStore } from "../store";
@@ -27,6 +29,8 @@ export function Settings() {
     <div className="max-w-3xl">
       <PageHeader title="Settings" />
 
+      <ThemePicker />
+
       <Card title="Deleting" icon={<Trash2 className="h-4 w-4 text-indigo-300" />} className="mb-5">
         <div className="flex items-start gap-4">
           <div className="flex-1">
@@ -44,7 +48,7 @@ export function Settings() {
           <Toggle checked={permanent} onChange={request} danger />
         </div>
         {permanent && (
-          <div className="mt-4 flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-950/40 px-4 py-3 text-sm text-red-200">
+          <div className="mt-4 flex items-center gap-2 rounded-card border border-red-500/50 bg-red-950/40 px-4 py-3 text-sm text-red-200">
             <AlertTriangle className="h-4 w-4 shrink-0 text-red-400" />
             Permanent delete is active. Every delete will ask you to type a confirmation phrase.
           </div>
@@ -119,5 +123,51 @@ function Row({ level, text }: { level: "safe" | "review" | "unknown" | "protecte
       </div>
       <p className="text-slate-300">{text}</p>
     </div>
+  );
+}
+
+/** Appearance: every theme is a set of design tokens (see index.css). */
+function ThemePicker() {
+  const theme = useStore((s) => s.theme);
+  const setTheme = useStore((s) => s.setTheme);
+  return (
+    <Card title="Appearance" icon={<Palette className="h-4 w-4 text-indigo-300" />} className="mb-5">
+      <div className="grid grid-cols-3 gap-3">
+        {THEMES.map((t) => {
+          const active = t.id === theme;
+          const [bg, surface, accent, positive] = t.swatches;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTheme(t.id)}
+              className={cx(
+                "rounded-card border p-2 text-left transition-all",
+                active ? "border-indigo-400/70 ring-2 ring-indigo-500/40" : "border-white/[0.08] hover:border-white/20",
+              )}
+            >
+              {/* Mini preview of the theme */}
+              <div className="relative h-20 overflow-hidden rounded-[14px]" style={{ background: bg }}>
+                <div className="absolute inset-y-2 left-2 w-5 rounded-lg" style={{ background: surface }}>
+                  <div className="mx-auto mt-2 h-2.5 w-2.5 rounded" style={{ background: accent }} />
+                </div>
+                <div className="absolute left-9 right-2 top-2 h-7 rounded-lg" style={{ background: surface }}>
+                  <div className="ml-2 mt-2.5 h-1.5 w-10 rounded-full" style={{ background: accent }} />
+                </div>
+                <div className="absolute bottom-2 left-9 right-2 flex h-8 items-end gap-1 rounded-lg px-2 pb-1.5" style={{ background: surface }}>
+                  {[40, 65, 50, 90, 70].map((h, i) => (
+                    <div key={i} className="flex-1 rounded-sm" style={{ height: `${h}%`, background: i === 3 ? positive : accent, opacity: i === 3 ? 1 : 0.55 }} />
+                  ))}
+                </div>
+              </div>
+              <div className="mt-2 flex items-center gap-2 px-1">
+                <span className="font-semibold">{t.name}</span>
+                {active && <Check className="h-4 w-4 text-indigo-300" />}
+              </div>
+              <p className="px-1 pb-1 text-xs text-muted">{t.description}</p>
+            </button>
+          );
+        })}
+      </div>
+    </Card>
   );
 }
