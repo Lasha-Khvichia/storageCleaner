@@ -6,6 +6,9 @@ import { PageHeader } from "../components/Layout";
 import { Button, Card, Empty, Modal, SafetyBadge, Spinner, Stat, useAsync } from "../components/ui";
 import { cx, formatBytes, formatCount, formatDateTime, formatDuration, timeAgo } from "../lib/format";
 import { useStore } from "../store";
+import { trBackend } from "../i18n/backend";
+import { useT } from "../i18n/useT";
+import type { MessageKey } from "../i18n";
 
 const STATUS_STYLE: Record<ItemStatus, string> = {
   trashed: "text-indigo-300",
@@ -18,6 +21,7 @@ const STATUS_STYLE: Record<ItemStatus, string> = {
 };
 
 export function HistoryPage() {
+  const { t } = useT();
   const dataVersion = useStore((s) => s.dataVersion);
   const bumpData = useStore((s) => s.bumpData);
   const pushToast = useStore((s) => s.pushToast);
@@ -29,10 +33,10 @@ export function HistoryPage() {
   const clear = async () => {
     try {
       await api.clearCleanupHistory();
-      pushToast({ kind: "success", title: "Cleanup history cleared" });
+      pushToast({ kind: "success", title: t("hist.cleared") });
       bumpData();
     } catch (e) {
-      pushToast({ kind: "error", title: "Could not clear history", body: errorMessage(e) });
+      pushToast({ kind: "error", title: t("hist.clearFailed"), body: trBackend(errorMessage(e)) });
     }
     setConfirmClear(false);
   };
@@ -40,25 +44,25 @@ export function HistoryPage() {
   return (
     <div>
       <PageHeader
-        title="History"
-        subtitle="Every cleanup is logged. Items moved to the Recycle Bin can be restored from here."
+        title={t("page.history")}
+        subtitle={t("hist.subtitle")}
         actions={
           <Button size="sm" variant="ghost" onClick={() => setConfirmClear(true)} disabled={!runs.data?.length}>
-            <Trash2 className="h-3.5 w-3.5" /> Clear history
+            <Trash2 className="h-3.5 w-3.5" /> {t("hist.clear")}
           </Button>
         }
       />
       <div className="mb-6 grid grid-cols-3 gap-4">
-        <Stat label="Total freed" value={formatBytes(totals.data?.freedBytes ?? 0)} accent="var(--sc-positive-300)" />
-        <Stat label="Cleanups" value={totals.data?.runs ?? 0} />
-        <Stat label="Items removed" value={formatCount(totals.data?.itemsDeleted ?? 0)} />
+        <Stat label={t("hist.totalFreed")} value={formatBytes(totals.data?.freedBytes ?? 0)} accent="var(--sc-positive-300)" />
+        <Stat label={t("hist.cleanups")} value={totals.data?.runs ?? 0} />
+        <Stat label={t("hist.itemsRemoved")} value={formatCount(totals.data?.itemsDeleted ?? 0)} />
       </div>
 
-      <Card title="Cleanups" icon={<HistoryIcon className="h-4 w-4 text-indigo-300" />} bodyClassName="p-0" className="mb-5">
+      <Card title={t("hist.cleanups")} icon={<HistoryIcon className="h-4 w-4 text-indigo-300" />} bodyClassName="p-0" className="mb-5">
         {runs.loading && !runs.data ? (
           <Spinner />
         ) : (runs.data ?? []).length === 0 ? (
-          <Empty icon={<HistoryIcon className="h-6 w-6" />} title="No cleanups yet" />
+          <Empty icon={<HistoryIcon className="h-6 w-6" />} title={t("hist.noCleanups")} />
         ) : (
           <div>
             {(runs.data ?? []).map((r) => (
@@ -68,18 +72,18 @@ export function HistoryPage() {
         )}
       </Card>
 
-      <Card title="Past scans" icon={<ScanSearch className="h-4 w-4 text-indigo-300" />} bodyClassName="p-0">
+      <Card title={t("hist.pastScans")} icon={<ScanSearch className="h-4 w-4 text-indigo-300" />} bodyClassName="p-0">
         {(scans.data ?? []).length === 0 ? (
-          <div className="py-8 text-center text-sm text-muted">No scans recorded yet.</div>
+          <div className="py-8 text-center text-sm text-muted">{t("hist.noScans")}</div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-panel-2 text-left text-xs uppercase tracking-wider text-muted">
               <tr>
-                <th className="px-5 py-2.5 font-medium">Scanned</th>
-                <th className="px-3 py-2.5 font-medium">Location</th>
-                <th className="px-3 py-2.5 text-right font-medium">Size</th>
-                <th className="px-3 py-2.5 text-right font-medium">Files</th>
-                <th className="px-5 py-2.5 text-right font-medium">Duration</th>
+                <th className="px-5 py-2.5 font-medium">{t("hist.col.scanned")}</th>
+                <th className="px-3 py-2.5 font-medium">{t("hist.col.location")}</th>
+                <th className="px-3 py-2.5 text-right font-medium">{t("hist.col.size")}</th>
+                <th className="px-3 py-2.5 text-right font-medium">{t("hist.col.files")}</th>
+                <th className="px-5 py-2.5 text-right font-medium">{t("hist.col.duration")}</th>
               </tr>
             </thead>
             <tbody>
@@ -100,28 +104,26 @@ export function HistoryPage() {
       <Modal
         open={confirmClear}
         onClose={() => setConfirmClear(false)}
-        title="Clear cleanup history?"
+        title={t("hist.clearTitle")}
         footer={
           <>
             <Button variant="ghost" onClick={() => setConfirmClear(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button variant="danger" onClick={clear}>
-              Clear history
+              {t("hist.clear")}
             </Button>
           </>
         }
       >
-        <p className="text-sm text-slate-300">
-          This removes the log of past cleanups. Files already in the Recycle Bin stay there, but you won't be able to restore
-          them from this app anymore. Free-space analytics are kept.
-        </p>
+        <p className="text-sm text-slate-300">{t("hist.clearBody")}</p>
       </Modal>
     </div>
   );
 }
 
 function RunRow({ run }: { run: CleanupRun }) {
+  const { t, tn } = useT();
   const [open, setOpen] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [purging, setPurging] = useState(false);
@@ -137,13 +139,13 @@ function RunRow({ run }: { run: CleanupRun }) {
       const r = await api.restoreRun(run.id);
       pushToast({
         kind: r.missing ? "info" : "success",
-        title: `Restored ${r.restored} item${r.restored === 1 ? "" : "s"}`,
-        body: r.missing ? `${r.missing} could not be found in the Recycle Bin (maybe already emptied).` : undefined,
+        title: tn("hist.restored", r.restored),
+        body: r.missing ? t("hist.missing", { n: r.missing }) : undefined,
       });
       bumpData();
       items.reload();
     } catch (err) {
-      pushToast({ kind: "error", title: "Restore failed", body: errorMessage(err) });
+      pushToast({ kind: "error", title: t("hist.restoreFailed"), body: trBackend(errorMessage(err)) });
     } finally {
       setRestoring(false);
     }
@@ -152,8 +154,8 @@ function RunRow({ run }: { run: CleanupRun }) {
   const purge = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const ok = await ask(
-      "Empty this cleanup's items from the Recycle Bin?\n\nThis frees the disk space now, but they can no longer be restored.",
-      { title: "Empty from Recycle Bin", kind: "warning", okLabel: "Empty from bin", cancelLabel: "Cancel" },
+      t("hist.purgeConfirm"),
+      { title: t("hist.purgeTitle"), kind: "warning", okLabel: t("hist.purgeOk"), cancelLabel: t("common.cancel") },
     );
     if (!ok) return;
     setPurging(true);
@@ -161,13 +163,13 @@ function RunRow({ run }: { run: CleanupRun }) {
       const r = await api.purgeRun(run.id);
       pushToast({
         kind: r.purged ? "success" : "info",
-        title: r.purged ? `Freed ${formatBytes(r.bytes)}` : "Nothing left in the Recycle Bin",
-        body: r.purged ? `${r.purged} item(s) emptied from the Recycle Bin.` : "These items were already restored or emptied.",
+        title: r.purged ? t("common.freed", { size: formatBytes(r.bytes) }) : t("hist.nothingLeft"),
+        body: r.purged ? t("hist.purged", { n: r.purged }) : t("hist.alreadyGone"),
       });
       bumpData();
       items.reload();
     } catch (err) {
-      pushToast({ kind: "error", title: "Couldn't empty from Recycle Bin", body: errorMessage(err) });
+      pushToast({ kind: "error", title: t("hist.purgeFailed"), body: trBackend(errorMessage(err)) });
     } finally {
       setPurging(false);
     }
@@ -180,7 +182,7 @@ function RunRow({ run }: { run: CleanupRun }) {
         <div className="w-44">
           <div className="text-sm font-medium">{formatDateTime(run.finishedAt)}</div>
           <div className="text-xs text-muted">
-            {timeAgo(run.finishedAt)} · via {run.source}
+            {t("hist.via", { when: timeAgo(run.finishedAt), source: run.source === "cli" ? t("source.cli") : t("source.app") })}
           </div>
         </div>
         <span
@@ -189,22 +191,22 @@ function RunRow({ run }: { run: CleanupRun }) {
             permanent ? "border-red-500/40 bg-red-500/10 text-red-300" : "border-indigo-500/30 bg-indigo-500/10 text-indigo-200",
           )}
         >
-          {permanent ? "Permanent" : "Recycle Bin"}
+          {permanent ? t("hist.modePermanent") : t("hist.modeTrash")}
         </span>
         <div className="flex-1 text-sm text-muted">
-          {run.deletedCount} deleted
-          {run.failedCount > 0 && <span className="text-red-400"> · {run.failedCount} failed</span>}
-          {run.skippedCount > 0 && <span> · {run.skippedCount} skipped</span>}
+          {t("hist.deleted", { n: run.deletedCount })}
+          {run.failedCount > 0 && <span className="text-red-400">{t("hist.failed", { n: run.failedCount })}</span>}
+          {run.skippedCount > 0 && <span>{t("hist.skipped", { n: run.skippedCount })}</span>}
         </div>
         <div className="tabular text-right text-base font-semibold text-emerald-400">{formatBytes(run.freedBytes)}</div>
         {!permanent && run.deletedCount > 0 && (
           <Button size="sm" onClick={restore} loading={restoring}>
-            <Undo2 className="h-3.5 w-3.5" /> Restore
+            <Undo2 className="h-3.5 w-3.5" /> {t("hist.restore")}
           </Button>
         )}
         {!permanent && run.deletedCount > 0 && (
-          <Button size="sm" variant="secondary" onClick={purge} loading={purging} title="Free the disk space now (can't be undone)">
-            <Eraser className="h-3.5 w-3.5" /> Empty from bin
+          <Button size="sm" variant="secondary" onClick={purge} loading={purging} title={t("hist.emptyFromBinTip")}>
+            <Eraser className="h-3.5 w-3.5" /> {t("hist.emptyFromBin")}
           </Button>
         )}
       </div>
@@ -216,11 +218,11 @@ function RunRow({ run }: { run: CleanupRun }) {
             <div className="max-h-80 overflow-y-auto rounded-lg border border-line">
               {items.data.map((it) => (
                 <div key={it.id} className="flex items-center gap-3 border-b border-line/60 px-3 py-2 text-sm last:border-b-0">
-                  <span className={cx("w-16 text-xs font-semibold uppercase", STATUS_STYLE[it.status])}>{it.status}</span>
+                  <span className={cx("min-w-16 shrink-0 whitespace-nowrap text-xs font-semibold uppercase", STATUS_STYLE[it.status])}>{t(`status.${it.status}` as MessageKey)}</span>
                   <SafetyBadge level={it.safety} compact />
-                  <span className="min-w-0 flex-1 truncate" title={it.error ?? it.path}>
+                  <span className="min-w-0 flex-1 truncate" title={it.error ? trBackend(it.error) : it.path}>
                     {it.path}
-                    {it.error && <span className="ml-2 text-xs text-red-400">{it.error}</span>}
+                    {it.error && <span className="ml-2 text-xs text-red-400">{trBackend(it.error)}</span>}
                   </span>
                   <span className="tabular text-muted">{formatBytes(it.size)}</span>
                 </div>

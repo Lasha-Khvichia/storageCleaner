@@ -11,6 +11,8 @@ import { Settings } from "./pages/Settings";
 import { Recommended } from "./pages/Recommended";
 import { Suggestions } from "./pages/Suggestions";
 import { formatBytes, formatDuration } from "./lib/format";
+import { t } from "./i18n";
+import { trBackend } from "./i18n/backend";
 import { useStore } from "./store";
 
 function useScanEvents() {
@@ -28,14 +30,16 @@ function useScanEvents() {
         if (info)
           store().pushToast({
             kind: "success",
-            title: "Scan complete",
-            body: `${info.root.path}: ${formatBytes(info.root.size)} in ${formatDuration(info.durationMs)}`,
+            title: t("scan.complete"),
+            body: t("scan.completeBody", { path: info.root.path, size: formatBytes(info.root.size), duration: formatDuration(info.durationMs) }),
           });
       }),
       events.onScanFailed((f) => {
         store().setScan({ running: false, error: f.cancelled ? null : f.message });
         store().pushToast(
-          f.cancelled ? { kind: "info", title: "Scan cancelled" } : { kind: "error", title: "Scan failed", body: f.message },
+          f.cancelled
+            ? { kind: "info", title: t("scan.cancelled") }
+            : { kind: "error", title: t("scan.failed"), body: trBackend(f.message) },
         );
       }),
     ];
@@ -48,8 +52,11 @@ function useScanEvents() {
 export default function App() {
   useScanEvents();
   const page = useStore((s) => s.page);
+  // Keyed by language: switching remounts the UI so every string, chart and
+  // formatted date updates at once (app state lives in the store, so nothing is lost).
+  const lang = useStore((s) => s.lang);
   return (
-    <div className="flex h-full">
+    <div key={lang} className="flex h-full">
       <div data-tauri-drag-region className="flex p-3 pr-0">
         <Sidebar />
       </div>

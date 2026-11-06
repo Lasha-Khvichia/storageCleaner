@@ -5,15 +5,17 @@ import { RecycleBinPill } from "./RecycleBin";
 import { api, type DiskInfo } from "../api";
 import { cx, formatBytes } from "../lib/format";
 import { useStore, type Page } from "../store";
+import { LANGUAGES, type MessageKey } from "../i18n";
+import { useT } from "../i18n/useT";
 
-const PAGE_TITLES: Record<Page, string> = {
-  dashboard: "Dashboard",
-  explorer: "Scan & Explore",
-  recommended: "Recommended Cleanups",
-  suggestions: "Suggestions",
-  files: "Files & Types",
-  history: "History",
-  settings: "Settings",
+const PAGE_TITLES: Record<Page, MessageKey> = {
+  dashboard: "page.dashboard",
+  explorer: "page.explorer",
+  recommended: "page.recommended",
+  suggestions: "page.suggestions",
+  files: "page.files",
+  history: "page.history",
+  settings: "page.settings",
 };
 
 /** The system drive (C:\ on Windows), refreshed every minute and after cleanups. */
@@ -42,6 +44,7 @@ function useSystemDrive(): DiskInfo | null {
  * The whole bar is a drag region; double-click toggles maximize.
  */
 export function TitleBar() {
+  const { t } = useT();
   const page = useStore((s) => s.page);
   const scan = useStore((s) => s.scan);
   const permanent = useStore((s) => s.permanentDelete);
@@ -76,30 +79,32 @@ export function TitleBar() {
           storage<span className="bg-gradient-to-r from-indigo-300 to-indigo-500 bg-clip-text text-transparent">Cleaner</span>
         </span>
         <span data-tauri-drag-region className="text-slate-600">/</span>
-        <span data-tauri-drag-region className="text-[13px] text-muted">
-          {PAGE_TITLES[page]}
+        <span data-tauri-drag-region className="max-w-[260px] truncate text-[13px] text-muted">
+          {t(PAGE_TITLES[page])}
         </span>
       </div>
 
       <div data-tauri-drag-region className="flex-1" />
 
       {/* Live status chips */}
+      <LanguageToggle />
       <RecycleBinPill />
       {permanent && (
-        <span className="flex h-8 items-center gap-1.5 rounded-full border border-red-500/50 bg-red-500/15 px-3 text-[11px] font-semibold text-red-300">
-          <AlertTriangle className="h-3 w-3" /> Permanent delete ON
+        <span className="flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full border border-red-500/50 bg-red-500/15 px-3 text-[11px] font-semibold text-red-300">
+          <AlertTriangle className="h-3 w-3" /> {t("title.permanentOn")}
         </span>
       )}
       {scan.running && (
-        <span className="tabular flex h-8 items-center rounded-full border border-cyan-500/40 bg-cyan-500/10 px-3 text-[11px] font-medium text-cyan-200">
-          Scanning{progress !== null ? ` ${Math.round(progress * 100)}%` : "…"}
+        <span className="tabular flex h-8 items-center whitespace-nowrap rounded-full border border-cyan-500/40 bg-cyan-500/10 px-3 text-[11px] font-medium text-cyan-200">
+          {t("title.scanning")}
+          {progress !== null ? ` ${Math.round(progress * 100)}%` : "…"}
         </span>
       )}
       {disk && (
         <span
-          title={`${disk.mount} ${formatBytes(disk.freeBytes)} free of ${formatBytes(disk.totalBytes)}`}
+          title={t("title.driveTooltip", { drive: disk.mount, free: formatBytes(disk.freeBytes), total: formatBytes(disk.totalBytes) })}
           className={cx(
-            "tabular flex h-8 items-center gap-2 rounded-full border px-3 text-[11px] font-medium",
+            "tabular flex h-8 items-center gap-2 whitespace-nowrap rounded-full border px-3 text-[11px] font-medium",
             tone === "red" && "border-red-500/40 bg-red-500/10 text-red-300",
             tone === "amber" && "border-amber-500/40 bg-amber-500/10 text-amber-200",
             tone === "emerald" && "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
@@ -114,19 +119,19 @@ export function TitleBar() {
               style={{ width: `${Math.max(3, (1 - freeShare) * 100)}%` }}
             />
           </span>
-          {disk.mount.replace(/\\$/, "")} {formatBytes(disk.freeBytes)} free
+          {t("title.driveFree", { drive: disk.mount.replace(/\\$/, ""), free: formatBytes(disk.freeBytes) })}
         </span>
       )}
 
       {/* Window controls */}
       <div className="ml-2 flex h-full items-stretch">
-        <WinButton label="Minimize" onClick={() => win.minimize()}>
+        <WinButton label={t("win.minimize")} onClick={() => win.minimize()}>
           <Minus className="h-3.5 w-3.5" />
         </WinButton>
-        <WinButton label={maximized ? "Restore" : "Maximize"} onClick={() => win.toggleMaximize()}>
+        <WinButton label={maximized ? t("win.restore") : t("win.maximize")} onClick={() => win.toggleMaximize()}>
           {maximized ? <RestoreIcon /> : <Square className="h-3 w-3" />}
         </WinButton>
-        <WinButton label="Close" danger onClick={() => win.close()}>
+        <WinButton label={t("win.close")} danger onClick={() => win.close()}>
           <X className="h-4 w-4" />
         </WinButton>
       </div>
@@ -180,5 +185,32 @@ function RestoreIcon() {
       <rect x="1.5" y="3.5" width="7" height="7" rx="1" />
       <path d="M3.5 3.5V2.5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-1" />
     </svg>
+  );
+}
+
+/** Compact always-visible language switch (EN | ქა). */
+function LanguageToggle() {
+  const { t, lang } = useT();
+  const setLang = useStore((s) => s.setLang);
+  return (
+    <div
+      title={t("title.language")}
+      className="flex h-8 items-center rounded-full border border-white/[0.08] bg-white/[0.04] p-0.5 text-[11px] font-semibold"
+    >
+      {LANGUAGES.map((l) => (
+        <button
+          key={l.id}
+          onClick={() => setLang(l.id)}
+          aria-pressed={lang === l.id}
+          aria-label={l.name}
+          className={cx(
+            "h-full rounded-full px-2.5 transition-colors",
+            lang === l.id ? "btn-primary text-white" : "text-slate-400 hover:text-slate-100",
+          )}
+        >
+          {l.short}
+        </button>
+      ))}
+    </div>
   );
 }

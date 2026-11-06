@@ -2,6 +2,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Loader2, Lock, X } from "lucide-react";
 import type { SafetyLevel } from "../api";
 import { SAFETY, cx } from "../lib/format";
+import { t } from "../i18n";
+import { trBackend } from "../i18n/backend";
 
 export function Card({
   title,
@@ -78,7 +80,7 @@ export function SafetyBadge({ level, reason, compact }: { level: SafetyLevel; re
   const s = SAFETY[level];
   return (
     <span
-      title={reason}
+      title={reason ? trBackend(reason) : undefined}
       className={cx(
         "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border font-medium",
         compact ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-0.5 text-xs",
@@ -232,7 +234,7 @@ export function Empty({ icon, title, children }: { icon: ReactNode; title: strin
 export function Spinner({ label }: { label?: string }) {
   return (
     <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted">
-      <Loader2 className="h-4 w-4 animate-spin" /> {label ?? "Loading…"}
+      <Loader2 className="h-4 w-4 animate-spin" /> {label ?? t("common.loading")}
     </div>
   );
 }

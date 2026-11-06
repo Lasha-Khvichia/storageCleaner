@@ -15,10 +15,18 @@ import { PageHeader } from "../components/Layout";
 import { Button, Card, Checkbox, Empty, SafetyBadge, Spinner, useAsync } from "../components/ui";
 import { SAFETY, cx, formatBytes } from "../lib/format";
 import { toSelected, useStore } from "../store";
+import { trBackend, trPlan } from "../i18n/backend";
+import { useT } from "../i18n/useT";
+import { t, tn } from "../i18n";
 
 type SortKey = "score" | "size" | "age";
 
+/** Plan title/description in the active language (they come from the Rust core). */
+const planText = (p: CleanupPlan) => trPlan(p.id, p.title, p.description);
+const planTitle = (p?: CleanupPlan) => (p ? planText(p).title : "");
+
 export function Recommended() {
+  useT(); // re-render on language switch
   const info = useStore((s) => s.scan.info);
   const dataVersion = useStore((s) => s.dataVersion);
   const setPage = useStore((s) => s.setPage);
@@ -41,12 +49,12 @@ export function Recommended() {
   if (!info) {
     return (
       <div>
-        <PageHeader title="Recommended Cleanups" />
-        <Empty icon={<Target className="h-6 w-6" />} title="Scan a drive first">
-          Recommendations are ranked from your latest scan.
+        <PageHeader title={t("page.recommended")} />
+        <Empty icon={<Target className="h-6 w-6" />} title={t("common.scanFirst")}>
+          {t("rec.emptyBody")}
           <div className="mt-4">
             <Button variant="primary" onClick={() => setPage("explorer")}>
-              <ScanSearch className="h-4 w-4" /> Start a scan
+              <ScanSearch className="h-4 w-4" /> {t("common.startScan")}
             </Button>
           </div>
         </Empty>
@@ -54,16 +62,16 @@ export function Recommended() {
     );
   }
 
-  if (report.loading && !report.data) return <Spinner label="Ranking cleanup candidates…" />;
-  if (report.error) return <Empty icon={<Target className="h-6 w-6" />} title="Couldn't build recommendations">{report.error}</Empty>;
+  if (report.loading && !report.data) return <Spinner label={t("rec.ranking")} />;
+  if (report.error) return <Empty icon={<Target className="h-6 w-6" />} title={t("rec.error")}>{trBackend(report.error)}</Empty>;
 
   const data = report.data;
   if (!data || data.items.length === 0) {
     return (
       <div>
-        <PageHeader title="Recommended Cleanups" subtitle={info.root.path} />
-        <Empty icon={<Target className="h-6 w-6" />} title="Nothing worth cleaning">
-          No large, safe or stale items were found in this scan. Nice and tidy.
+        <PageHeader title={t("page.recommended")} subtitle={info.root.path} />
+        <Empty icon={<Target className="h-6 w-6" />} title={t("rec.nothing")}>
+          {t("rec.nothingBody")}
         </Empty>
       </div>
     );
@@ -75,8 +83,8 @@ export function Recommended() {
   return (
     <div>
       <PageHeader
-        title="Recommended Cleanups"
-        subtitle={`Ranked by space freed, safety and how long it has sat unused · ${data.root}`}
+        title={t("page.recommended")}
+        subtitle={t("rec.subtitle", { path: data.root })}
       />
 
       {recommended && <Hero plan={recommended} items={data.items} />}
@@ -101,7 +109,7 @@ export function Recommended() {
         bodyClassName="p-0"
         title={
           <span>
-            {planFilter ? data.plans.find((p) => p.id === planFilter)?.title : "All recommendations"}
+            {planFilter ? planTitle(data.plans.find((p) => p.id === planFilter)) : t("rec.all")}
             <span className="ml-2 font-normal text-muted">({items.length})</span>
           </span>
         }
@@ -110,7 +118,7 @@ export function Recommended() {
           <div className="flex items-center gap-2">
             {planFilter && (
               <Button size="sm" variant="ghost" onClick={() => setPlanFilter(null)}>
-                Show all
+                {t("common.showAll")}
               </Button>
             )}
             <div className="flex overflow-hidden rounded-lg border border-line text-xs">
@@ -118,9 +126,9 @@ export function Recommended() {
                 <button
                   key={k}
                   onClick={() => setSort(k)}
-                  className={cx("px-3 py-1.5 capitalize", sort === k ? "bg-indigo-500/20 text-indigo-200" : "text-muted hover:bg-white/5")}
+                  className={cx("px-3 py-1.5", sort === k ? "bg-indigo-500/20 text-indigo-200" : "text-muted hover:bg-white/5")}
                 >
-                  {k === "age" ? "Oldest" : k}
+                  {t(k === "age" ? "rec.sort.age" : k === "size" ? "rec.sort.size" : "rec.sort.score")}
                 </button>
               ))}
             </div>
@@ -158,19 +166,19 @@ function Hero({ plan, items }: { plan: CleanupPlan; items: Recommendation[] }) {
         <Target className="h-7 w-7 text-white" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-xs font-medium uppercase tracking-wider text-indigo-200/80">Recommended plan</div>
+        <div className="text-xs font-medium uppercase tracking-wider text-indigo-200/80">{t("rec.planLabel")}</div>
         <div className="tabular mt-0.5 text-3xl font-bold">
-          Free {formatBytes(plan.bytes)}
-          <span className="ml-3 text-base font-medium text-muted">in {plan.count} items</span>
+          {t("rec.free", { size: formatBytes(plan.bytes) })}
+          <span className="ml-3 text-base font-medium text-muted">{t("rec.inItems", { n: plan.count })}</span>
         </div>
-        <div className="mt-1 text-sm text-slate-300/80">{plan.description}</div>
+        <div className="mt-1 text-sm text-slate-300/80">{planText(plan).description}</div>
       </div>
       <div className="flex flex-col items-end gap-2">
         <span className={cx("rounded-full border px-2.5 py-0.5 text-xs", s.border, s.bg, s.text)}>
-          Highest risk: {s.label}
+          {t("rec.highestRisk", { level: s.label })}
         </span>
         <Button variant={all ? "secondary" : "primary"} size="lg" onClick={() => select(!all)}>
-          {all ? "Unselect plan" : selected > 0 ? `Select all (${selected}/${plan.count})` : "Select recommended plan"}
+          {all ? t("rec.unselectPlan") : selected > 0 ? t("rec.selectAllCount", { selected, total: plan.count }) : t("rec.selectPlan")}
         </Button>
       </div>
     </div>
@@ -198,18 +206,18 @@ function PlanCard({
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="font-semibold">{plan.title}</div>
-        <span className={cx("h-2.5 w-2.5 shrink-0 rounded-full mt-1.5", s.dot)} title={`Highest risk: ${s.label}`} />
+        <div className="font-semibold">{planText(plan).title}</div>
+        <span className={cx("h-2.5 w-2.5 shrink-0 rounded-full mt-1.5", s.dot)} title={t("rec.highestRisk", { level: s.label })} />
       </div>
       <div className="tabular mt-1 text-2xl font-bold">{formatBytes(plan.bytes)}</div>
-      <div className="text-xs text-muted">{plan.count} item{plan.count === 1 ? "" : "s"}</div>
-      <p className="mt-2 flex-1 text-xs leading-relaxed text-slate-400">{plan.description}</p>
+      <div className="text-xs text-muted">{tn("common.items", plan.count)}</div>
+      <p className="mt-2 flex-1 text-xs leading-relaxed text-slate-400">{planText(plan).description}</p>
       <div className="mt-3 flex gap-2">
         <Button size="sm" variant={active ? "primary" : "secondary"} onClick={onShow} className="flex-1">
-          {active ? "Showing" : "Show"}
+          {active ? t("common.showing") : t("common.show")}
         </Button>
         <Button size="sm" variant="secondary" onClick={() => select(!all)} className="flex-1">
-          {all ? "Unselect" : "Select"}
+          {all ? t("common.unselect") : t("common.select")}
         </Button>
       </div>
     </div>
@@ -228,7 +236,7 @@ function ScoreRing({ score }: { score: number }) {
   const c = 2 * Math.PI * r;
   const color = scoreColor(score);
   return (
-    <div className="relative h-11 w-11 shrink-0" title={`Recommendation score ${score}/100`}>
+    <div className="relative h-11 w-11 shrink-0" title={t("rec.score", { n: score })}>
       <svg viewBox="0 0 44 44" className="h-11 w-11 -rotate-90">
         <circle cx="22" cy="22" r={r} fill="none" style={{ stroke: "var(--sc-surface-raised)" }} strokeWidth="4" />
         <circle
@@ -250,11 +258,11 @@ function ScoreRing({ score }: { score: number }) {
 }
 
 function formatAge(days: number): string {
-  if (days <= 0) return "today";
-  if (days < 14) return `${days}d ago`;
-  if (days < 60) return `${Math.floor(days / 7)}w ago`;
-  if (days < 730) return `${Math.floor(days / 30)}mo ago`;
-  return `${Math.floor(days / 365)}y ago`;
+  if (days <= 0) return t("time.today");
+  if (days < 14) return t("time.daysAgo", { n: days });
+  if (days < 60) return t("time.weeksAgo", { n: Math.floor(days / 7) });
+  if (days < 730) return t("time.monthsAgo", { n: Math.floor(days / 30) });
+  return t("time.yearsAgo", { n: Math.floor(days / 365) });
 }
 
 function Row({ rec, maxSize }: { rec: Recommendation; maxSize: number }) {
@@ -262,7 +270,7 @@ function Row({ rec, maxSize }: { rec: Recommendation; maxSize: number }) {
   const toggleSelect = useStore((s) => s.toggleSelect);
   const n = rec.node;
   const checked = selection.has(n.id);
-  const [main, ...extra] = rec.reasons.slice(1);
+  const [main, ...extra] = rec.reasons.slice(1).map((r) => trBackend(r));
   return (
     <div
       className={cx("flex items-center gap-4 px-5 py-3 transition-colors hover:bg-white/[0.02]", checked && "bg-indigo-500/[0.06]")}
@@ -274,7 +282,7 @@ function Row({ rec, maxSize }: { rec: Recommendation; maxSize: number }) {
           <span className="truncate font-medium">{n.name}</span>
           <SafetyBadge level={n.safety} reason={n.reason} compact />
           {rec.confidence < 0.5 && (
-            <span className="rounded-full bg-slate-500/15 px-2 py-0.5 text-[10px] text-slate-300">check first</span>
+            <span className="rounded-full bg-slate-500/15 px-2 py-0.5 text-[10px] text-slate-300">{t("rec.checkFirst")}</span>
           )}
         </div>
         <div className="truncate text-xs text-muted" title={n.path}>
@@ -300,7 +308,7 @@ function Row({ rec, maxSize }: { rec: Recommendation; maxSize: number }) {
       </div>
       <button
         className="rounded-lg p-2 text-muted hover:bg-white/5 hover:text-slate-200"
-        title="Show in Explorer"
+        title={t("common.showInExplorer")}
         onClick={() => revealItemInDir(n.path).catch(() => {})}
       >
         <FolderOpen className="h-4 w-4" />
@@ -316,25 +324,21 @@ function HowItWorks() {
       <button className="flex w-full items-center gap-2 px-5 py-3 text-left text-sm text-slate-300" onClick={() => setOpen((o) => !o)}>
         {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         <HelpCircle className="h-4 w-4 text-muted" />
-        How are recommendations scored?
+        {t("rec.howTitle")}
       </button>
       {open && (
         <div className="grid grid-cols-3 gap-4 border-t border-line px-5 py-4 text-sm">
-          <Factor weight="50%" title="Space freed" color="text-cyan-300">
-            Log scale: 1 MB scores 0, 10 GB+ scores full marks. Big items win without one huge file drowning out the rest.
+          <Factor weight="50%" title={t("rec.factor.space")} color="text-cyan-300">
+            {t("rec.factor.spaceBody")}
           </Factor>
-          <Factor weight="35%" title="Confidence" color="text-indigo-300">
-            From the safety rating and category: caches beat old downloads beat personal files. Dev clutter of a project
-            you touched this week counts less.
+          <Factor weight="35%" title={t("rec.factor.confidence")} color="text-indigo-300">
+            {t("rec.factor.confidenceBody")}
           </Factor>
-          <Factor weight="15%" title="Staleness" color="text-violet-300">
-            Time since anything changed, up to a year. For node_modules and build output, the <em>project&apos;s</em> last
-            activity is used.
+          <Factor weight="15%" title={t("rec.factor.stale")} color="text-violet-300">
+            {t("rec.factor.staleBody")}
           </Factor>
           <div className="col-span-3 text-xs text-muted">
-            Protected items are never recommended. Personal files only appear when they are large or untouched for months, and
-            are marked “check first”. Deleting still goes through the normal review dialog, using the Recycle Bin unless
-            permanent delete is on.
+            {t("rec.footnote")}
           </div>
         </div>
       )}

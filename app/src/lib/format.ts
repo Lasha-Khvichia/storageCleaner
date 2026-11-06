@@ -1,4 +1,5 @@
 import type { SafetyLevel } from "../api";
+import { currentLang, locale, t } from "../i18n";
 
 /** Binary units, matching Windows Explorer and the Rust core. */
 export function formatBytes(bytes: number): string {
@@ -15,16 +16,25 @@ export function formatBytes(bytes: number): string {
 }
 
 export function formatCount(n: number): string {
-  return n.toLocaleString();
+  return n.toLocaleString(locale());
 }
 
 export function formatPercent(share: number, digits = 1): string {
   return `${(share * 100).toFixed(digits)}%`;
 }
 
+// WebView2 (Chromium) ships without Georgian locale data, so Intl silently
+// falls back to English. Format Georgian dates ourselves (24-hour clock).
+const KA_MONTHS = ["იან", "თებ", "მარ", "აპრ", "მაი", "ივნ", "ივლ", "აგვ", "სექ", "ოქტ", "ნოე", "დეკ"];
+const pad = (n: number) => String(n).padStart(2, "0");
+function kaDate(d: Date): string {
+  return `${d.getDate()} ${KA_MONTHS[d.getMonth()]}. ${d.getFullYear()}`;
+}
+
 export function formatDate(unix: number): string {
   if (!unix) return "—";
-  return new Date(unix * 1000).toLocaleDateString(undefined, {
+  if (currentLang() === "ka") return kaDate(new Date(unix * 1000));
+  return new Date(unix * 1000).toLocaleDateString(locale(), {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -33,7 +43,11 @@ export function formatDate(unix: number): string {
 
 export function formatDateTime(unix: number): string {
   if (!unix) return "—";
-  return new Date(unix * 1000).toLocaleString(undefined, {
+  if (currentLang() === "ka") {
+    const d = new Date(unix * 1000);
+    return `${kaDate(d)}, ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  return new Date(unix * 1000).toLocaleString(locale(), {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -43,29 +57,40 @@ export function formatDateTime(unix: number): string {
 }
 
 export function timeAgo(unix: number): string {
-  if (!unix) return "never";
+  if (!unix) return t("time.never");
   const s = Math.max(0, Date.now() / 1000 - unix);
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  if (s < 86400 * 30) return `${Math.floor(s / 86400)}d ago`;
-  if (s < 86400 * 365) return `${Math.floor(s / (86400 * 30))}mo ago`;
-  return `${Math.floor(s / (86400 * 365))}y ago`;
+  if (s < 60) return t("time.justNow");
+  if (s < 3600) return t("time.minutesAgo", { n: Math.floor(s / 60) });
+  if (s < 86400) return t("time.hoursAgo", { n: Math.floor(s / 3600) });
+  if (s < 86400 * 30) return t("time.daysAgo", { n: Math.floor(s / 86400) });
+  if (s < 86400 * 365) return t("time.monthsAgo", { n: Math.floor(s / (86400 * 30)) });
+  return t("time.yearsAgo", { n: Math.floor(s / (86400 * 365)) });
+}
+
+/** Age in days, e.g. "today", "3d ago", "8mo ago". */
+export function formatAgeDays(days: number): string {
+  if (days <= 0) return t("time.today");
+  if (days < 14) return t("time.daysAgo", { n: days });
+  if (days < 60) return t("time.weeksAgo", { n: Math.floor(days / 7) });
+  if (days < 730) return t("time.monthsAgo", { n: Math.floor(days / 30) });
+  return t("time.yearsAgo", { n: Math.floor(days / 365) });
 }
 
 export function formatDuration(ms: number): string {
-  if (ms < 1000) return `${ms} ms`;
+  if (ms < 1000) return t("duration.ms", { n: ms });
   const s = ms / 1000;
-  if (s < 60) return `${s.toFixed(1)} s`;
-  return `${Math.floor(s / 60)}m ${Math.round(s % 60)}s`;
+  if (s < 60) return t("duration.s", { n: s.toFixed(1) });
+  return t("duration.ms2", { m: Math.floor(s / 60), s: Math.round(s % 60) });
 }
 
 export const SAFETY: Record<
   SafetyLevel,
-  { label: string; color: string; text: string; bg: string; border: string; dot: string }
+  { readonly label: string; color: string; text: string; bg: string; border: string; dot: string }
 > = {
   safe: {
-    label: "Safe",
+    get label() {
+      return t("safety.safe");
+    },
     color: "#22c55e",
     text: "text-emerald-400",
     bg: "bg-emerald-500/10",
@@ -73,7 +98,9 @@ export const SAFETY: Record<
     dot: "bg-emerald-400",
   },
   review: {
-    label: "Review",
+    get label() {
+      return t("safety.review");
+    },
     color: "#f59e0b",
     text: "text-amber-400",
     bg: "bg-amber-500/10",
@@ -81,7 +108,9 @@ export const SAFETY: Record<
     dot: "bg-amber-400",
   },
   unknown: {
-    label: "Unknown",
+    get label() {
+      return t("safety.unknown");
+    },
     color: "#7f6e62",
     text: "text-slate-400",
     bg: "bg-slate-500/10",
@@ -89,7 +118,9 @@ export const SAFETY: Record<
     dot: "bg-slate-400",
   },
   protected: {
-    label: "Protected",
+    get label() {
+      return t("safety.protected");
+    },
     color: "#ef4444",
     text: "text-red-400",
     bg: "bg-red-500/10",

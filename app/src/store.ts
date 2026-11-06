@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { NodeView, SafetyLevel, ScanInfo, ScanProgress } from "./api";
 import { applyTheme, storedTheme } from "./lib/theme";
+import { applyLang, storedLang, type Lang } from "./i18n";
 
 export type Page = "dashboard" | "explorer" | "recommended" | "suggestions" | "files" | "history" | "settings";
 
@@ -45,6 +46,10 @@ interface AppStore {
   theme: string;
   setTheme: (id: string) => void;
 
+  /** Active UI language (see i18n/index.ts). */
+  lang: Lang;
+  setLang: (lang: Lang) => void;
+
   /** Node currently shown in the explorer. */
   currentDir: number;
   setCurrentDir: (id: number) => void;
@@ -82,6 +87,12 @@ export const useStore = create<AppStore>((set, get) => ({
   setTheme: (theme) => {
     applyTheme(theme);
     set({ theme });
+  },
+
+  lang: storedLang(),
+  setLang: (lang) => {
+    applyLang(lang);
+    set({ lang });
   },
 
   currentDir: 0,

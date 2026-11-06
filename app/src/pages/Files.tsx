@@ -7,6 +7,9 @@ import { NodeTable } from "../components/NodeTable";
 import { Button, Card, Empty, Spinner, useAsync } from "../components/ui";
 import { cx, formatBytes, formatCount } from "../lib/format";
 import { useStore } from "../store";
+import { t } from "../i18n";
+import { trBackend } from "../i18n/backend";
+import { useT } from "../i18n/useT";
 
 export function Files() {
   const info = useStore((s) => s.scan.info);
@@ -19,11 +22,11 @@ export function Files() {
   if (!info) {
     return (
       <div>
-        <PageHeader title="Files & Types" />
-        <Empty icon={<FileStack className="h-6 w-6" />} title="Scan a drive first">
+        <PageHeader title={t("page.files")} />
+        <Empty icon={<FileStack className="h-6 w-6" />} title={t("common.scanFirst")}>
           <div className="mt-4">
             <Button variant="primary" onClick={() => setPage("explorer")}>
-              <ScanSearch className="h-4 w-4" /> Start a scan
+              <ScanSearch className="h-4 w-4" /> {t("common.startScan")}
             </Button>
           </div>
         </Empty>
@@ -33,12 +36,12 @@ export function Files() {
 
   return (
     <div>
-      <PageHeader title="Files & Types" subtitle={`Largest files and what kinds of files fill ${info.root.path}.`} />
-      <Card title="Space by file type" icon={<PieChart className="h-4 w-4 text-indigo-300" />} className="mb-5">
+      <PageHeader title={t("page.files")} subtitle={t("files.subtitle", { path: info.root.path })} />
+      <Card title={t("files.byType")} icon={<PieChart className="h-4 w-4 text-indigo-300" />} className="mb-5">
         {types.loading && !types.data ? <Spinner /> : <TypeBreakdown groups={types.data ?? []} />}
       </Card>
       <Card
-        title="Largest files"
+        title={t("files.largest")}
         icon={<FileStack className="h-4 w-4 text-indigo-300" />}
         actions={
           <select
@@ -48,7 +51,7 @@ export function Files() {
           >
             {[50, 100, 250, 500].map((n) => (
               <option key={n} value={n}>
-                Top {n}
+                {t("files.top", { n })}
               </option>
             ))}
           </select>
@@ -62,6 +65,7 @@ export function Files() {
 }
 
 function TypeBreakdown({ groups }: { groups: TypeGroup[] }) {
+  const { lang } = useT();
   const { SERIES_COLORS, SURFACE, tooltipBase, theme } = useChartTheme();
   const [active, setActive] = useState<string | null>(null);
   const total = groups.reduce((s, g) => s + g.bytes, 0);
@@ -71,7 +75,7 @@ function TypeBreakdown({ groups }: { groups: TypeGroup[] }) {
       tooltip: {
         ...tooltipBase,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        formatter: (p: any) => `<b>${p.name}</b><br/>${formatBytes(p.value)} · ${p.percent}%`,
+        formatter: (p: any) => `<b>${trBackend(p.name)}</b><br/>${formatBytes(p.value)} · ${p.percent}%`,
       },
       series: [
         {
@@ -84,9 +88,9 @@ function TypeBreakdown({ groups }: { groups: TypeGroup[] }) {
         },
       ],
     }),
-    [groups, theme],
+    [groups, theme, lang],
   );
-  if (groups.length === 0) return <div className="py-8 text-center text-sm text-muted">No files.</div>;
+  if (groups.length === 0) return <div className="py-8 text-center text-sm text-muted">{t("files.none")}</div>;
   const shown = active ? groups.filter((g) => g.group === active) : groups;
   return (
     <div className="grid grid-cols-[320px_1fr] gap-6">
@@ -98,17 +102,17 @@ function TypeBreakdown({ groups }: { groups: TypeGroup[] }) {
         />
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <div className="tabular text-xl font-bold">{formatBytes(total)}</div>
-          <div className="text-xs text-muted">{active ?? "all files"}</div>
+          <div className="text-xs text-muted">{active ? trBackend(active) : t("files.all")}</div>
         </div>
       </div>
       <div className="overflow-hidden rounded-xl border border-line">
         <table className="w-full text-sm">
           <thead className="bg-panel-2 text-left text-xs uppercase tracking-wider text-muted">
             <tr>
-              <th className="px-3 py-2.5 font-medium">Type</th>
-              <th className="px-3 py-2.5 text-right font-medium">Size</th>
-              <th className="px-3 py-2.5 text-right font-medium">Files</th>
-              <th className="px-3 py-2.5 font-medium">Top extensions</th>
+              <th className="px-3 py-2.5 font-medium">{t("files.type")}</th>
+              <th className="px-3 py-2.5 text-right font-medium">{t("files.size")}</th>
+              <th className="px-3 py-2.5 text-right font-medium">{t("files.files")}</th>
+              <th className="px-3 py-2.5 font-medium">{t("files.topExt")}</th>
             </tr>
           </thead>
           <tbody>
@@ -123,7 +127,7 @@ function TypeBreakdown({ groups }: { groups: TypeGroup[] }) {
                   <td className="px-3 py-2">
                     <span className="flex items-center gap-2 font-medium">
                       <span className="h-2.5 w-2.5 rounded-sm" style={{ background: SERIES_COLORS[i % SERIES_COLORS.length] }} />
-                      {g.group}
+                      {trBackend(g.group)}
                     </span>
                   </td>
                   <td className="tabular px-3 py-2 text-right">{formatBytes(g.bytes)}</td>
@@ -131,7 +135,7 @@ function TypeBreakdown({ groups }: { groups: TypeGroup[] }) {
                   <td className="px-3 py-2 text-xs text-muted">
                     {g.extensions
                       .slice(0, active ? 8 : 4)
-                      .map(([ext, bytes]) => `${ext.startsWith("(") ? ext : "." + ext} ${formatBytes(bytes)}`)
+                      .map(([ext, bytes]) => `${ext.startsWith("(") ? trBackend(ext) : "." + ext} ${formatBytes(bytes)}`)
                       .join(" · ")}
                   </td>
                 </tr>

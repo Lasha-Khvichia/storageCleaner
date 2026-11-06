@@ -1,11 +1,15 @@
+import { t } from "../i18n";
+
 /**
  * Theme registry. Each id must have a matching `[data-theme="id"]` block in
  * index.css defining the `--sc-*` tokens. See docs/DESIGN_SYSTEM.md.
  */
 export interface ThemeInfo {
   id: string;
-  name: string;
-  description: string;
+  /** Localised (from i18n `theme.<id>.name`). */
+  readonly name: string;
+  /** Localised (from i18n `theme.<id>.desc`). */
+  readonly description: string;
   /** Preview swatches: background, surface, accent, positive. */
   swatches: [string, string, string, string];
 }
@@ -13,20 +17,32 @@ export interface ThemeInfo {
 export const THEMES: ThemeInfo[] = [
   {
     id: "ember",
-    name: "Ember",
-    description: "Warm dark with orange accents and mint highlights.",
+    get name() {
+      return t("theme.ember.name");
+    },
+    get description() {
+      return t("theme.ember.desc");
+    },
     swatches: ["#0c0907", "#201813", "#ff7a2f", "#6ee7b7"],
   },
   {
     id: "midnight",
-    name: "Midnight",
-    description: "Cool navy with indigo accents and cyan highlights.",
+    get name() {
+      return t("theme.midnight.name");
+    },
+    get description() {
+      return t("theme.midnight.desc");
+    },
     swatches: ["#0b0f17", "#182032", "#6366f1", "#22d3ee"],
   },
   {
     id: "forest",
-    name: "Forest",
-    description: "Deep green-black with emerald accents and amber highlights.",
+    get name() {
+      return t("theme.forest.name");
+    },
+    get description() {
+      return t("theme.forest.desc");
+    },
     swatches: ["#070b09", "#152019", "#10b981", "#facc15"],
   },
 ];

@@ -18,19 +18,22 @@ import type { ReactNode } from "react";
 import { cx, formatBytes } from "../lib/format";
 import { useStore, type Page } from "../store";
 import { Button } from "./ui";
+import { useT } from "../i18n/useT";
+import type { MessageKey } from "../i18n";
 import logo from "../assets/logo.png";
 
-const NAV: { page: Page; label: string; icon: ReactNode }[] = [
-  { page: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-[18px] w-[18px]" /> },
-  { page: "explorer", label: "Scan & Explore", icon: <HardDrive className="h-[18px] w-[18px]" /> },
-  { page: "recommended", label: "Recommended Cleanups", icon: <Target className="h-[18px] w-[18px]" /> },
-  { page: "suggestions", label: "Suggestions", icon: <Sparkles className="h-[18px] w-[18px]" /> },
-  { page: "files", label: "Files & Types", icon: <Files className="h-[18px] w-[18px]" /> },
-  { page: "history", label: "History", icon: <History className="h-[18px] w-[18px]" /> },
+const NAV: { page: Page; label: MessageKey; icon: ReactNode }[] = [
+  { page: "dashboard", label: "page.dashboard", icon: <LayoutDashboard className="h-[18px] w-[18px]" /> },
+  { page: "explorer", label: "page.explorer", icon: <HardDrive className="h-[18px] w-[18px]" /> },
+  { page: "recommended", label: "page.recommended", icon: <Target className="h-[18px] w-[18px]" /> },
+  { page: "suggestions", label: "page.suggestions", icon: <Sparkles className="h-[18px] w-[18px]" /> },
+  { page: "files", label: "page.files", icon: <Files className="h-[18px] w-[18px]" /> },
+  { page: "history", label: "page.history", icon: <History className="h-[18px] w-[18px]" /> },
 ];
 
 /** Slim floating icon rail with tooltips (labels appear on hover). */
 export function Sidebar() {
+  const { t } = useT();
   const page = useStore((s) => s.page);
   const setPage = useStore((s) => s.setPage);
   const scan = useStore((s) => s.scan);
@@ -43,7 +46,7 @@ export function Sidebar() {
         {NAV.map((n) => (
           <RailButton
             key={n.page}
-            label={n.label}
+            label={t(n.label)}
             active={page === n.page}
             onClick={() => setPage(n.page)}
             badge={n.page === "explorer" && scan.running}
@@ -54,13 +57,13 @@ export function Sidebar() {
       </nav>
       <div className="flex flex-col items-center gap-2">
         <RailButton
-          label={permanent ? "Delete mode: PERMANENT (no Recycle Bin)" : "Delete mode: Recycle Bin (undoable)"}
+          label={permanent ? t("rail.modePermanent") : t("rail.modeTrash")}
           onClick={() => setPage("settings")}
           tone={permanent ? "danger" : "safe"}
         >
           {permanent ? <AlertTriangle className="h-[18px] w-[18px]" /> : <ShieldCheck className="h-[18px] w-[18px]" />}
         </RailButton>
-        <RailButton label="Settings" active={page === "settings"} onClick={() => setPage("settings")}>
+        <RailButton label={t("page.settings")} active={page === "settings"} onClick={() => setPage("settings")}>
           <Settings className="h-[18px] w-[18px]" />
         </RailButton>
       </div>
@@ -101,7 +104,7 @@ function RailButton({
       {children}
       {badge && <span className="absolute right-1.5 top-1.5 h-2 w-2 animate-pulse rounded-full bg-mint" />}
       {/* Tooltip */}
-      <span className="pointer-events-none absolute left-full ml-3 whitespace-nowrap rounded-lg border border-white/[0.08] bg-overlay px-2.5 py-1.5 text-xs font-medium text-slate-100 opacity-0 shadow-xl shadow-black/50 transition-opacity group-hover:opacity-100">
+      <span className="pointer-events-none absolute left-full z-50 ml-3 whitespace-nowrap rounded-lg border border-white/[0.08] bg-overlay px-2.5 py-1.5 text-xs font-medium text-slate-100 opacity-0 shadow-xl shadow-black/50 transition-opacity group-hover:opacity-100">
         {label}
       </span>
     </button>
@@ -109,22 +112,24 @@ function RailButton({
 }
 
 export function PermanentBanner() {
+  const { t } = useT();
   const permanent = useStore((s) => s.permanentDelete);
   const setPage = useStore((s) => s.setPage);
   if (!permanent) return null;
   return (
     <div className="mx-7 mb-1 flex items-center gap-3 rounded-full border border-red-500/50 bg-gradient-to-r from-red-700 to-red-600 px-5 py-2 text-sm text-white shadow-[0_8px_24px_-10px_rgba(239,68,68,.8)]">
       <AlertTriangle className="h-4 w-4 shrink-0" />
-      <span className="font-semibold">Permanent delete is ON.</span>
-      <span className="text-red-100">Deleted files skip the Recycle Bin and cannot be recovered.</span>
-      <button onClick={() => setPage("settings")} className="ml-auto rounded-md bg-white/15 px-2.5 py-1 text-xs font-medium hover:bg-white/25">
-        Change
+      <span className="shrink-0 font-semibold">{t("banner.permanentOn")}</span>
+      <span className="truncate text-red-100">{t("banner.permanentBody")}</span>
+      <button onClick={() => setPage("settings")} className="ml-auto shrink-0 rounded-md bg-white/15 px-2.5 py-1 text-xs font-medium hover:bg-white/25">
+        {t("banner.change")}
       </button>
     </div>
   );
 }
 
 export function SelectionTray() {
+  const { t, tn } = useT();
   const selection = useStore((s) => s.selection);
   const clear = useStore((s) => s.clearSelection);
   const open = useStore((s) => s.setDeleteModalOpen);
@@ -143,19 +148,19 @@ export function SelectionTray() {
       >
         <div>
           <div className="text-sm font-semibold">
-            {items.length} item{items.length === 1 ? "" : "s"} selected
+            {tn("tray.selected", items.length)}
           </div>
           <div className="text-xs text-muted">
             <span className="tabular font-medium text-slate-200">{formatBytes(total)}</span>
-            {risky > 0 && <span className="ml-2 text-amber-400">· {risky} need review</span>}
+            {risky > 0 && <span className="ml-2 text-amber-400">{t("tray.needReview", { n: risky })}</span>}
           </div>
         </div>
         <Button variant="ghost" size="sm" onClick={clear}>
-          <X className="h-3.5 w-3.5" /> Clear
+          <X className="h-3.5 w-3.5" /> {t("common.clear")}
         </Button>
         <Button variant={permanent ? "danger" : "primary"} onClick={() => open(true)}>
           <Trash2 className="h-4 w-4" />
-          {permanent ? "Review & delete permanently" : "Review & delete"}
+          {permanent ? t("tray.reviewPermanent") : t("tray.review")}
         </Button>
       </div>
     </div>

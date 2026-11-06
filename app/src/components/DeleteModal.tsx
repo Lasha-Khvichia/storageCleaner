@@ -4,12 +4,15 @@ import { api, errorMessage, type DeletePlan } from "../api";
 import { cx, formatBytes } from "../lib/format";
 import { useStore } from "../store";
 import { Button, Modal, SafetyBadge, Spinner } from "./ui";
+import { trBackend } from "../i18n/backend";
+import { useT } from "../i18n/useT";
 
 /**
  * Review-and-confirm dialog. The plan (what is allowed, blocked and why)
  * comes from Rust; this dialog only collects the user's confirmation.
  */
 export function DeleteModal() {
+  const { t } = useT();
   const open = useStore((s) => s.deleteModalOpen);
   const setOpen = useStore((s) => s.setDeleteModalOpen);
   const selection = useStore((s) => s.selection);
@@ -32,7 +35,7 @@ export function DeleteModal() {
     setPhrase("");
     setUnderstood(false);
     const ids = [...selection.keys()];
-    api.planDelete(ids, permanent).then(setPlan).catch((e) => setError(errorMessage(e)));
+    api.planDelete(ids, permanent).then(setPlan).catch((e) => setError(trBackend(errorMessage(e))));
     api.getConfirmPhrase().then(setRequiredPhrase).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -55,25 +58,32 @@ export function DeleteModal() {
       // Group identical reasons ("In use by another program…") instead of
       // dumping one raw OS error per item.
       const reasons = new Map<string, number>();
-      for (const f of failed) reasons.set(f.error ?? "Unknown error", (reasons.get(f.error ?? "Unknown error") ?? 0) + 1);
+      for (const f of failed) {
+        const why = f.error ? trBackend(f.error) : t("del.unknownError");
+        reasons.set(why, (reasons.get(why) ?? 0) + 1);
+      }
       const lines: string[] = [
-        `${report.deletedCount} ${permanent ? "permanently deleted" : "moved to the Recycle Bin"}` +
-          (partial.length ? ` (${partial.length} partly: some files inside were in use)` : "") +
-          (report.skippedCount ? `, ${report.skippedCount} skipped` : ""),
+        t(permanent ? "del.resultPermanent" : "del.resultTrash", { n: report.deletedCount }) +
+          (partial.length ? t("del.resultPartial", { n: partial.length }) : "") +
+          (report.skippedCount ? t("del.resultSkipped", { n: report.skippedCount }) : ""),
       ];
-      for (const [why, n] of reasons) lines.push(`${n} not deleted: ${why}`);
-      if (!permanent && report.freedBytes > 0)
-        lines.push("Recycle Bin items still use disk space. To free it now: History → Empty from bin.");
+      for (const [why, n] of reasons) lines.push(t("del.resultNotDeleted", { n, reason: why }));
+      if (!permanent && report.freedBytes > 0) lines.push(t("del.resultBinHint"));
       pushToast({
         kind: failed.length && report.deletedCount === 0 ? "error" : failed.length ? "info" : "success",
-        title: report.deletedCount === 0 ? "Nothing was deleted" : permanent ? `Freed ${formatBytes(report.freedBytes)}` : `Moved ${formatBytes(report.freedBytes)} to the Recycle Bin`,
+        title:
+          report.deletedCount === 0
+            ? t("del.nothingDeleted")
+            : permanent
+              ? t("common.freed", { size: formatBytes(report.freedBytes) })
+              : t("del.movedToBin", { size: formatBytes(report.freedBytes) }),
         body: lines.join("\n"),
       });
       clearSelection();
       bumpData();
       setOpen(false);
     } catch (e) {
-      setError(errorMessage(e));
+      setError(trBackend(errorMessage(e)));
     } finally {
       setBusy(false);
     }
@@ -88,22 +98,22 @@ export function DeleteModal() {
       title={
         permanent ? (
           <span className="flex items-center gap-2 text-red-300">
-            <ShieldAlert className="h-5 w-5" /> Permanently delete — review carefully
+            <ShieldAlert className="h-5 w-5" /> {t("del.titlePermanent")}
           </span>
         ) : (
           <span className="flex items-center gap-2">
-            <Trash2 className="h-5 w-5 text-indigo-300" /> Move to Recycle Bin — review
+            <Trash2 className="h-5 w-5 text-indigo-300" /> {t("del.titleTrash")}
           </span>
         )
       }
       footer={
         <>
           <Button variant="ghost" onClick={close} disabled={busy}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button variant={permanent ? "danger" : "primary"} disabled={!canDelete} loading={busy} onClick={run}>
             <Trash2 className="h-4 w-4" />
-            {permanent ? "Delete permanently" : "Move to Recycle Bin"}
+            {permanent ? t("del.buttonPermanent") : t("del.buttonTrash")}
             {plan && ` · ${formatBytes(plan.allowedBytes)}`}
           </Button>
         </>
@@ -112,25 +122,25 @@ export function DeleteModal() {
       {error && (
         <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</div>
       )}
-      {!plan && !error && <Spinner label="Checking every item against the safety rules…" />}
+      {!plan && !error && <Spinner label={t("del.checking")} />}
       {plan && (
         <div className="space-y-5">
           {permanent && (
             <div className="rounded-xl border-2 border-red-500 bg-red-950/60 p-4">
               <div className="flex items-center gap-2 text-base font-bold text-red-300">
-                <AlertTriangle className="h-5 w-5" /> These files will NOT go to the Recycle Bin.
+                <AlertTriangle className="h-5 w-5" /> {t("del.notToBin")}
               </div>
               <p className="mt-1 text-sm text-red-200/90">
-                Permanent deletion cannot be undone. Restore from history will not be possible.
+                {t("del.cannotUndo")}
               </p>
             </div>
           )}
 
           <div className="grid grid-cols-3 gap-3">
-            <SummaryBox label="Will be freed" value={formatBytes(plan.allowedBytes)} tone={permanent ? "red" : "green"} />
-            <SummaryBox label="Items to delete" value={String(plan.allowedCount)} />
+            <SummaryBox label={t("del.willFree")} value={formatBytes(plan.allowedBytes)} tone={permanent ? "red" : "green"} />
+            <SummaryBox label={t("del.itemsToDelete")} value={String(plan.allowedCount)} />
             <SummaryBox
-              label="Blocked (protected)"
+              label={t("del.blocked")}
               value={String(plan.blockedCount)}
               tone={plan.blockedCount ? "red" : undefined}
             />
@@ -140,14 +150,14 @@ export function DeleteModal() {
             <ul className="space-y-1.5">
               {plan.warnings.map((w) => (
                 <li key={w} className="flex items-start gap-2 text-sm text-amber-300">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {w}
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {trBackend(w)}
                 </li>
               ))}
             </ul>
           )}
           {plan.mergedCount > 0 && (
             <p className="text-xs text-muted">
-              {plan.mergedCount} selected item(s) are inside another selected folder and were merged into it.
+              {t("del.merged", { n: plan.mergedCount })}
             </p>
           )}
 
@@ -169,7 +179,7 @@ export function DeleteModal() {
                   </div>
                   {!it.allowed && (
                     <div className="mt-0.5 flex items-center gap-1.5 text-xs text-red-300">
-                      <Lock className="h-3 w-3" /> Blocked: {it.blockedReason}
+                      <Lock className="h-3 w-3" /> {t("del.blockedReason", { reason: trBackend(it.blockedReason) })}
                     </div>
                   )}
                   {it.allowed &&
@@ -177,7 +187,7 @@ export function DeleteModal() {
                       .filter((w) => !w.startsWith("Permanent delete"))
                       .map((w) => (
                         <div key={w} className="mt-0.5 text-xs text-amber-300/90">
-                          ! {w}
+                          ! {trBackend(w)}
                         </div>
                       ))}
                 </div>
@@ -194,11 +204,8 @@ export function DeleteModal() {
                 className="mt-0.5 h-4 w-4 accent-amber-500"
               />
               <span>
-                <span className="font-semibold text-amber-200">I understand</span>
-                <span className="text-amber-100/80">
-                  {" "}
-                  — some items are not rated <b>Safe</b>. I have checked them and want to delete them anyway.
-                </span>
+                <span className="font-semibold text-amber-200">{t("del.understand")}</span>
+                <span className="text-amber-100/80"> {t("del.understandBody", { safe: t("safety.safe") })}</span>
               </span>
             </label>
           )}
@@ -206,8 +213,7 @@ export function DeleteModal() {
           {permanent && allowed.length > 0 && (
             <div className="rounded-xl border border-red-500/50 bg-red-950/40 p-4">
               <label className="text-sm text-red-200">
-                Type <code className="rounded bg-red-900/60 px-1.5 py-0.5 font-mono font-bold text-white">{plan.confirmPhrase ?? requiredPhrase}</code>{" "}
-                to confirm:
+                <ConfirmLabel phrase={plan.confirmPhrase ?? requiredPhrase} />
               </label>
               <input
                 autoFocus
@@ -242,5 +248,18 @@ function SummaryBox({ label, value, tone }: { label: string; value: string; tone
         {value}
       </div>
     </div>
+  );
+}
+
+/** "Type <phrase> to confirm:" with the phrase highlighted (it must stay English). */
+function ConfirmLabel({ phrase }: { phrase: string }) {
+  const { t } = useT();
+  const [before, after] = t("del.typeToConfirm").split("{phrase}");
+  return (
+    <>
+      {before}
+      <code className="rounded bg-red-900/60 px-1.5 py-0.5 font-mono font-bold text-white">{phrase}</code>
+      {after}
+    </>
   );
 }

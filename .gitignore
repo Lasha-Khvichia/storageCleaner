@@ -31,3 +31,6 @@ dist-linux/
 
 # Branding previews (regenerate with scripts/branding/make-assets.ps1)
 scripts/branding/out/*-preview.png
+
+# Marketing video project & renders: kept local only, never pushed
+marketing/

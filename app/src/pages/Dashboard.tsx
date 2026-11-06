@@ -8,10 +8,13 @@ import { Button, Card, Empty, Spinner, Stat, useAsync } from "../components/ui";
 import { cx, formatBytes, formatDateTime, formatPercent, timeAgo } from "../lib/format";
 import { startScan } from "../lib/scan";
 import { useStore } from "../store";
+import { t, type MessageKey } from "../i18n";
+import { useT } from "../i18n/useT";
 
 const RANGES = [7, 30, 90, 365];
 
 export function Dashboard() {
+  const { t } = useT();
   const dataVersion = useStore((s) => s.dataVersion);
   const scanInfo = useStore((s) => s.scan.info);
   const setPage = useStore((s) => s.setPage);
@@ -32,8 +35,8 @@ export function Dashboard() {
   return (
     <div>
       <PageHeader
-        title="Dashboard"
-        subtitle="Your drives at a glance, free-space trends and cleanup history."
+        title={t("page.dashboard")}
+        subtitle={t("dash.subtitle")}
         actions={
           <Button
             size="sm"
@@ -43,28 +46,28 @@ export function Dashboard() {
               totals.reload();
             }}
           >
-            <RefreshCw className="h-3.5 w-3.5" /> Refresh
+            <RefreshCw className="h-3.5 w-3.5" /> {t("common.refresh")}
           </Button>
         }
       />
 
       <div className="mb-6 grid grid-cols-4 gap-4">
-        <Stat label="Free space (all drives)" value={formatBytes(totalFree)} sub={`of ${formatBytes(totalSize)}`} accent="var(--sc-accent-500)" />
+        <Stat label={t("dash.freeAll")} value={formatBytes(totalFree)} sub={t("dash.ofTotal", { total: formatBytes(totalSize) })} accent="var(--sc-accent-500)" />
         <Stat
-          label="Freed by storageCleaner"
+          label={t("dash.freedBy")}
           value={formatBytes(totals.data?.freedBytes ?? 0)}
-          sub={`${totals.data?.itemsDeleted ?? 0} items removed`}
+          sub={t("dash.itemsRemoved", { n: totals.data?.itemsDeleted ?? 0 })}
           accent="var(--sc-positive-300)"
         />
         <Stat
-          label="Cleanups"
+          label={t("dash.cleanups")}
           value={totals.data?.runs ?? 0}
-          sub={totals.data?.lastCleanupAt ? `last ${timeAgo(totals.data.lastCleanupAt)}` : "none yet"}
+          sub={totals.data?.lastCleanupAt ? t("dash.last", { when: timeAgo(totals.data.lastCleanupAt) }) : t("dash.noneYet")}
         />
         <Stat
-          label="Safe to free now"
+          label={t("dash.safeNow")}
           value={scanInfo ? formatBytes(safeBytes) : "—"}
-          sub={scanInfo ? `from scan of ${scanInfo.root.path}` : "run a scan to find out"}
+          sub={scanInfo ? t("dash.fromScan", { path: scanInfo.root.path }) : t("dash.runScan")}
           accent="var(--sc-positive-300)"
         />
       </div>
@@ -79,21 +82,21 @@ export function Dashboard() {
           </div>
           <div className="flex-1">
             <div className="text-lg font-semibold">
-              You can safely free <span className="text-emerald-300">{formatBytes(safeBytes)}</span>
+              <Highlighted text={t("dash.canFree")} param="{size}" value={formatBytes(safeBytes)} className="text-emerald-300" />
             </div>
             <div className="text-sm text-muted">
-              Caches, temp files, crash dumps and developer clutter that are rebuilt automatically.
+              {t("dash.canFreeBody")}
             </div>
           </div>
           <span className="flex items-center gap-1 text-sm font-medium text-emerald-300">
-            Review suggestions <ArrowRight className="h-4 w-4" />
+            {t("dash.reviewSuggestions")} <ArrowRight className="h-4 w-4" />
           </span>
         </button>
       )}
 
       <RecycleBinCard />
 
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted">Drives</h2>
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted">{t("dash.drives")}</h2>
       {disks.loading && !disks.data ? (
         <Spinner />
       ) : (
@@ -105,7 +108,7 @@ export function Dashboard() {
       )}
 
       <Card
-        title="Free space over time"
+        title={t("dash.chartTitle")}
         icon={<Activity className="h-4 w-4 text-indigo-300" />}
         actions={
           <>
@@ -119,14 +122,14 @@ export function Dashboard() {
                     days === r ? "bg-indigo-500/25 text-indigo-200" : "text-muted hover:text-slate-200",
                   )}
                 >
-                  {r === 365 ? "1y" : `${r}d`}
+                  {r === 365 ? t("dash.range.y") : t("dash.range.d", { n: r })}
                 </button>
               ))}
             </div>
             <Button
               size="sm"
               variant="ghost"
-              title="Record free space now"
+              title={t("dash.recordNow")}
               onClick={() => api.recordSpaceSnapshot().then(history.reload)}
             >
               <Camera className="h-3.5 w-3.5" />
@@ -137,8 +140,8 @@ export function Dashboard() {
         {history.data && history.data.length > 0 ? (
           <SpaceChart snapshots={history.data} />
         ) : (
-          <Empty icon={<Activity className="h-6 w-6" />} title="No history yet">
-            Free space is recorded automatically every 30 minutes while the app is open, and after every scan and cleanup.
+          <Empty icon={<Activity className="h-6 w-6" />} title={t("dash.noHistory")}>
+            {t("dash.noHistoryBody")}
           </Empty>
         )}
       </Card>
@@ -180,10 +183,10 @@ function DiskCard({ disk }: { disk: DiskInfo }) {
         </div>
         <div className="tabular mt-2 text-sm">
           <span className="font-semibold text-slate-100">{formatBytes(disk.freeBytes)}</span>
-          <span className="text-muted"> free of {formatBytes(disk.totalBytes)}</span>
+          <span className="text-muted"> {t("dash.freeOf", { total: formatBytes(disk.totalBytes) })}</span>
         </div>
         <Button size="sm" variant="secondary" className="mt-3" onClick={() => startScan(disk.mount, disk.usedBytes)}>
-          <ScanSearch className="h-3.5 w-3.5" /> Scan
+          <ScanSearch className="h-3.5 w-3.5" /> {t("common.scan")}
         </Button>
       </div>
     </div>
@@ -191,6 +194,7 @@ function DiskCard({ disk }: { disk: DiskInfo }) {
 }
 
 function SpaceChart({ snapshots }: { snapshots: SpaceSnapshot[] }) {
+  const { lang } = useT();
   const { SERIES_COLORS, CHART_TEXT, CHART_LINE, POSITIVE, BG, RAISED, ACCENT, tooltipBase, theme } = useChartTheme();
   const option = useMemo(() => {
     const byMount = new Map<string, SpaceSnapshot[]>();
@@ -230,7 +234,7 @@ function SpaceChart({ snapshots }: { snapshots: SpaceSnapshot[] }) {
           label: { formatter: "✓", color: BG, fontSize: 11, fontWeight: "bold" },
           data: list
             .filter((s) => s.trigger === "cleanup")
-            .map((s) => ({ coord: [s.takenAt * 1000, s.freeBytes], name: "Cleanup" })),
+            .map((s) => ({ coord: [s.takenAt * 1000, s.freeBytes], name: t("dash.cleanupMarker") })),
         },
       };
     });
@@ -249,8 +253,8 @@ function SpaceChart({ snapshots }: { snapshots: SpaceSnapshot[] }) {
           const rows = params
             .map(
               (p) =>
-                `${p.marker} <b>${p.seriesName}</b> ${formatBytes(p.value[1])} free` +
-                (p.value[2] !== "auto" ? ` <span style="color:var(--sc-chart-text)">(${p.value[2]})</span>` : ""),
+                `${p.marker} <b>${p.seriesName}</b> ${t("dash.chartFree", { size: formatBytes(p.value[1]) })}` +
+                (p.value[2] !== "auto" ? ` <span style="color:var(--sc-chart-text)">(${triggerLabel(p.value[2])})</span>` : ""),
             )
             .join("<br/>");
           return `${head}<br/>${rows}`;
@@ -285,6 +289,25 @@ function SpaceChart({ snapshots }: { snapshots: SpaceSnapshot[] }) {
       ],
       series,
     };
-  }, [snapshots, theme]);
+  }, [snapshots, theme, lang]);
   return <Chart option={option} style={{ height: 340 }} />;
+}
+
+/** Snapshot trigger ids ("scan", "cleanup", …) → localised label. */
+function triggerLabel(trigger: string): string {
+  const key = `trigger.${trigger}` as MessageKey;
+  const label = t(key);
+  return label === key ? trigger : label;
+}
+
+/** Renders a translated sentence with one value highlighted. */
+function Highlighted({ text, param, value, className }: { text: string; param: string; value: string; className: string }) {
+  const [before, after] = text.split(param);
+  return (
+    <>
+      {before}
+      <span className={className}>{value}</span>
+      {after}
+    </>
+  );
 }

@@ -20,6 +20,9 @@ import { Button, Card, Meter, SafetyBadge, Spinner, Stat, useAsync } from "../co
 import { SAFETY, formatBytes, formatCount, formatDuration, formatPercent } from "../lib/format";
 import { startScan } from "../lib/scan";
 import { useStore } from "../store";
+import { t } from "../i18n";
+import { trBackend } from "../i18n/backend";
+import { useT } from "../i18n/useT";
 
 const PAGE = 200;
 
@@ -34,15 +37,15 @@ function ScanTargetPicker() {
   const disks = useAsync(() => api.getDisks(), []);
   const error = useStore((s) => s.scan.error);
   const pickFolder = async () => {
-    const dir = await open({ directory: true, multiple: false, title: "Choose a folder to scan" });
+    const dir = await open({ directory: true, multiple: false, title: t("exp.chooseFolderTitle") });
     if (typeof dir === "string") startScan(dir, null);
   };
   return (
     <div>
-      <PageHeader title="Scan & Explore" subtitle="Pick a drive or folder. Scanning is read-only — nothing is changed." />
+      <PageHeader title={t("page.explorer")} subtitle={t("exp.pickSubtitle")} />
       {error && (
         <div className="mb-5 flex items-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-          <TriangleAlert className="h-4 w-4" /> {error}
+          <TriangleAlert className="h-4 w-4" /> {trBackend(error)}
         </div>
       )}
       <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
@@ -66,7 +69,7 @@ function ScanTargetPicker() {
               </div>
               <Meter share={share} className="mt-4" color={share > 0.9 ? "#ef4444" : share > 0.75 ? "#f59e0b" : "var(--sc-accent-500)"} />
               <div className="tabular mt-2 text-xs text-muted">
-                {formatBytes(d.usedBytes)} used · {formatBytes(d.freeBytes)} free
+                {t("exp.usedFree", { used: formatBytes(d.usedBytes), free: formatBytes(d.freeBytes) })}
               </div>
             </button>
           );
@@ -76,7 +79,7 @@ function ScanTargetPicker() {
           className="flex flex-col items-center justify-center gap-2 rounded-card border border-dashed border-line p-5 text-muted transition hover:border-indigo-400/60 hover:text-slate-200"
         >
           <FolderSearch className="h-6 w-6" />
-          <span className="text-sm font-medium">Choose a folder…</span>
+          <span className="text-sm font-medium">{t("exp.chooseFolder")}</span>
         </button>
       </div>
     </div>
@@ -90,7 +93,7 @@ function ScanProgressView() {
   const [cancelling, setCancelling] = useState(false);
   return (
     <div>
-      <PageHeader title="Scanning…" subtitle={scan.target ?? ""} />
+      <PageHeader title={t("exp.scanning")} subtitle={scan.target ?? ""} />
       <Card>
         <div className="flex items-center gap-6">
           <div className="relative flex h-28 w-28 shrink-0 items-center justify-center">
@@ -98,15 +101,15 @@ function ScanProgressView() {
             <span className="tabular text-2xl font-bold">{pct !== null ? formatPercent(pct, 0) : "…"}</span>
           </div>
           <div className="grid flex-1 grid-cols-4 gap-3">
-            <Stat label="Files" value={formatCount(p?.files ?? 0)} />
-            <Stat label="Folders" value={formatCount(p?.dirs ?? 0)} />
-            <Stat label="Size found" value={formatBytes(p?.bytes ?? 0)} accent="var(--sc-accent-500)" />
-            <Stat label="Unreadable" value={formatCount(p?.errors ?? 0)} sub="access denied etc." />
+            <Stat label={t("exp.files")} value={formatCount(p?.files ?? 0)} />
+            <Stat label={t("exp.folders")} value={formatCount(p?.dirs ?? 0)} />
+            <Stat label={t("exp.sizeFound")} value={formatBytes(p?.bytes ?? 0)} accent="var(--sc-accent-500)" />
+            <Stat label={t("exp.unreadable")} value={formatCount(p?.errors ?? 0)} sub={t("exp.unreadableSub")} />
           </div>
         </div>
         {pct !== null && <Meter share={pct} className="mt-6 h-2" />}
         <div className="mt-4 truncate font-mono text-xs text-muted" title={p?.currentPath}>
-          {p?.currentPath || "Starting…"}
+          {p?.currentPath || t("exp.starting")}
         </div>
         <div className="mt-5 flex justify-end">
           <Button
@@ -117,7 +120,7 @@ function ScanProgressView() {
               api.cancelScan().finally(() => setCancelling(false));
             }}
           >
-            <Square className="h-3.5 w-3.5" /> Cancel scan
+            <Square className="h-3.5 w-3.5" /> {t("exp.cancelScan")}
           </Button>
         </div>
       </Card>
@@ -167,13 +170,13 @@ function Browser() {
   };
 
   const exportCsv = async () => {
-    const path = await save({ title: "Export report", defaultPath: "storage-report.csv", filters: [{ name: "CSV", extensions: ["csv"] }] });
+    const path = await save({ title: t("exp.exportTitle"), defaultPath: "storage-report.csv", filters: [{ name: "CSV", extensions: ["csv"] }] });
     if (!path) return;
     try {
       await api.exportCsv(path, 4);
-      pushToast({ kind: "success", title: "Report exported", body: path });
+      pushToast({ kind: "success", title: t("exp.exported"), body: path });
     } catch (e) {
-      pushToast({ kind: "error", title: "Export failed", body: errorMessage(e) });
+      pushToast({ kind: "error", title: t("exp.exportFailed"), body: trBackend(errorMessage(e)) });
     }
   };
 
@@ -183,23 +186,23 @@ function Browser() {
   return (
     <div>
       <PageHeader
-        title="Scan & Explore"
-        subtitle={
-          <>
-            {info.root.path} · {formatBytes(info.root.size)} · {formatCount(info.root.files)} files · scanned in{" "}
-            {formatDuration(info.durationMs)}
-          </>
-        }
+        title={t("page.explorer")}
+        subtitle={t("exp.summary", {
+          path: info.root.path,
+          size: formatBytes(info.root.size),
+          files: formatCount(info.root.files),
+          duration: formatDuration(info.durationMs),
+        })}
         actions={
           <>
             <Button size="sm" onClick={exportCsv}>
-              <Download className="h-3.5 w-3.5" /> Export CSV
+              <Download className="h-3.5 w-3.5" /> {t("exp.exportCsv")}
             </Button>
             <Button size="sm" onClick={() => startScan(info.root.path, null)}>
-              <RotateCcw className="h-3.5 w-3.5" /> Rescan
+              <RotateCcw className="h-3.5 w-3.5" /> {t("exp.rescan")}
             </Button>
             <Button size="sm" variant="primary" onClick={() => setScan({ info: null })}>
-              <ScanSearch className="h-3.5 w-3.5" /> New scan
+              <ScanSearch className="h-3.5 w-3.5" /> {t("exp.newScan")}
             </Button>
           </>
         }
@@ -208,7 +211,7 @@ function Browser() {
       {totalBytes > 0 && (
         <div className="glass mb-5 rounded-card p-4">
           <div className="mb-2 flex items-center justify-between text-xs text-muted">
-            <span className="font-medium uppercase tracking-wider">Safety breakdown of all scanned files</span>
+            <span className="font-medium uppercase tracking-wider">{t("exp.breakdown")}</span>
             <span className="flex gap-4">
               {(totals.data ?? []).map((t) => (
                 <span key={t.level} className="flex items-center gap-1.5">
@@ -251,33 +254,33 @@ function Browser() {
         {n && (
           <span className="ml-auto flex items-center gap-3 text-xs text-muted">
             <span className="tabular font-semibold text-slate-200">{formatBytes(n.size)}</span>
-            {formatCount(n.files)} files · {formatCount(n.dirs)} folders
+            {t("exp.filesFolders", { files: formatCount(n.files), dirs: formatCount(n.dirs) })}
             <SafetyBadge level={n.safety} reason={n.reason} compact />
           </span>
         )}
       </nav>
       {n && n.reason && n.safety !== "unknown" && (
         <p className="-mt-2 mb-4 text-xs text-muted">
-          <b className={SAFETY[n.safety].text}>Why:</b> {n.reason}
+          <b className={SAFETY[n.safety].text}>{t("exp.why")}</b> {trBackend(n.reason)}
         </p>
       )}
 
-      <Card title="Space map" className="mb-5" bodyClassName="p-2">
+      <Card title={t("exp.spaceMap")} className="mb-5" bodyClassName="p-2">
         {treemap.loading && !treemap.data ? (
           <Spinner />
         ) : treemap.data && (treemap.data.children?.length ?? 0) > 0 ? (
           <Treemap data={treemap.data} onOpen={setCurrentDir} />
         ) : (
-          <div className="py-10 text-center text-sm text-muted">This folder is empty.</div>
+          <div className="py-10 text-center text-sm text-muted">{t("exp.emptyFolder")}</div>
         )}
       </Card>
 
-      <Card title={`Contents (${n?.childCount ?? rows.length})`} bodyClassName="p-3">
-        <NodeTable rows={rows} onOpenDir={(d) => setCurrentDir(d.id)} emptyText={loadingRows ? "Loading…" : "This folder is empty."} />
+      <Card title={t("exp.contents", { n: formatCount(n?.childCount ?? rows.length) })} bodyClassName="p-3">
+        <NodeTable rows={rows} onOpenDir={(d) => setCurrentDir(d.id)} emptyText={loadingRows ? t("common.loading") : t("exp.emptyFolder")} />
         {n && rows.length < n.childCount && (
           <div className="mt-3 flex justify-center">
             <Button size="sm" onClick={loadMore} loading={loadingRows}>
-              Load more ({formatCount(n.childCount - rows.length)} remaining)
+              {t("exp.loadMore", { n: formatCount(n.childCount - rows.length) })}
             </Button>
           </div>
         )}
@@ -287,10 +290,11 @@ function Browser() {
 }
 
 function Treemap({ data, onOpen }: { data: TreemapNode; onOpen: (id: number) => void }) {
+  const { t: tr, lang } = useT();
   const { tooltipBase, theme, BG, SURFACE, RAISED, TEXT } = useChartTheme();
   const option = useMemo(() => {
     const convert = (t: TreemapNode, depth: number): Record<string, unknown> => ({
-      name: t.name,
+      name: t.id === null && t.name === "Other" ? tr("exp.other") : t.name,
       value: t.value,
       id: t.id === null ? `other-${Math.random()}` : String(t.id),
       nodeId: t.id,
@@ -309,7 +313,7 @@ function Treemap({ data, onOpen }: { data: TreemapNode; onOpen: (id: number) => 
         formatter: (p: any) =>
           `<b>${p.name}</b><br/>${formatBytes(p.value)}` +
           (p.data?.safety ? `<br/><span style="color:${SAFETY[p.data.safety as keyof typeof SAFETY].color}">${SAFETY[p.data.safety as keyof typeof SAFETY].label}</span>` : "") +
-          (p.data?.isDir ? `<br/><span style="color:var(--sc-chart-text)">Click to open</span>` : ""),
+          (p.data?.isDir ? `<br/><span style="color:var(--sc-chart-text)">${tr("exp.clickToOpen")}</span>` : ""),
       },
       series: [
         {
@@ -326,7 +330,9 @@ function Treemap({ data, onOpen }: { data: TreemapNode; onOpen: (id: number) => 
           label: { show: true, formatter: "{b}", color: "#fff", fontSize: 11, overflow: "truncate" },
           upperLabel: { show: true, height: 20, color: TEXT, fontSize: 11, backgroundColor: "transparent" },
           levels: [
-            { itemStyle: { borderWidth: 0, gapWidth: 3 } },
+            // The invisible root: paint it with the surface colour (ECharts defaults it to white,
+            // which showed as a strip above the map and in the gaps between blocks).
+            { itemStyle: { borderWidth: 0, gapWidth: 3, color: SURFACE, borderColor: SURFACE }, upperLabel: { show: false } },
             { itemStyle: { borderWidth: 3, gapWidth: 1, borderColor: SURFACE } },
             { itemStyle: { borderWidth: 1, gapWidth: 1 }, colorSaturation: [0.35, 0.6] },
           ],
@@ -334,7 +340,7 @@ function Treemap({ data, onOpen }: { data: TreemapNode; onOpen: (id: number) => 
         },
       ],
     };
-  }, [data, theme]);
+  }, [data, theme, lang]);
 
   return (
     <Chart

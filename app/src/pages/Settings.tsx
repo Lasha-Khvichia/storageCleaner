@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { AlertTriangle, Check, Lock, Palette, ShieldCheck, Trash2 } from "lucide-react";
+import { AlertTriangle, Check, Languages, Lock, Palette, ShieldCheck, Trash2 } from "lucide-react";
+import { LANGUAGES } from "../i18n";
+import { useT } from "../i18n/useT";
 import { cx } from "../lib/format";
 import { THEMES } from "../lib/theme";
 import { PageHeader } from "../components/Layout";
@@ -7,6 +9,7 @@ import { Button, Card, Modal, SafetyBadge, Toggle } from "../components/ui";
 import { useStore } from "../store";
 
 export function Settings() {
+  const { t } = useT();
   const permanent = useStore((s) => s.permanentDelete);
   const setPermanent = useStore((s) => s.setPermanentDelete);
   const pushToast = useStore((s) => s.pushToast);
@@ -17,7 +20,7 @@ export function Settings() {
   const request = (on: boolean) => {
     if (!on) {
       setPermanent(false);
-      pushToast({ kind: "success", title: "Permanent delete turned off", body: "Deleted items go to the Recycle Bin again." });
+      pushToast({ kind: "success", title: t("set.permOffToast"), body: t("set.permOffBody") });
       return;
     }
     setAck1(false);
@@ -27,22 +30,22 @@ export function Settings() {
 
   return (
     <div className="max-w-3xl">
-      <PageHeader title="Settings" />
+      <PageHeader title={t("page.settings")} />
 
+      <LanguagePicker />
       <ThemePicker />
 
-      <Card title="Deleting" icon={<Trash2 className="h-4 w-4 text-indigo-300" />} className="mb-5">
+      <Card title={t("set.deleting")} icon={<Trash2 className="h-4 w-4 text-indigo-300" />} className="mb-5">
         <div className="flex items-start gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-2 font-semibold">
-              Permanent delete
+              {t("set.permanent")}
               {permanent && (
-                <span className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">On</span>
+                <span className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">{t("common.on")}</span>
               )}
             </div>
             <p className="mt-1 text-sm text-muted">
-              When off (recommended), everything you delete goes to the Recycle Bin and can be restored from History. When on,
-              files are erased immediately and cannot be recovered.
+              {t("set.permanentBody")}
             </p>
           </div>
           <Toggle checked={permanent} onChange={request} danger />
@@ -50,21 +53,20 @@ export function Settings() {
         {permanent && (
           <div className="mt-4 flex items-center gap-2 rounded-card border border-red-500/50 bg-red-950/40 px-4 py-3 text-sm text-red-200">
             <AlertTriangle className="h-4 w-4 shrink-0 text-red-400" />
-            Permanent delete is active. Every delete will ask you to type a confirmation phrase.
+            {t("set.permanentActive")}
           </div>
         )}
       </Card>
 
-      <Card title="How safety ratings work" icon={<ShieldCheck className="h-4 w-4 text-indigo-300" />}>
+      <Card title={t("set.howSafety")} icon={<ShieldCheck className="h-4 w-4 text-indigo-300" />}>
         <div className="space-y-3 text-sm">
-          <Row level="safe" text="Caches, temp files, crash dumps, build output. Rebuilt automatically or never needed again." />
-          <Row level="review" text="Probably removable but it's your data: Downloads, installers, logs, old leftovers. Look first." />
-          <Row level="unknown" text="No rule matched. Could be anything — only delete if you know what it is." />
-          <Row level="protected" text="Windows, installed programs, profile folders, system files. Always blocked." />
+          <Row level="safe" text={t("set.row.safe")} />
+          <Row level="review" text={t("set.row.review")} />
+          <Row level="unknown" text={t("set.row.unknown")} />
+          <Row level="protected" text={t("set.row.protected")} />
           <p className="flex items-start gap-2 pt-2 text-xs text-muted">
             <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            Safety checks run in the Rust core and are re-checked right before each deletion, so the UI cannot bypass them.
-            Links and junctions are never followed.
+            {t("set.coreNote")}
           </p>
         </div>
       </Card>
@@ -75,13 +77,13 @@ export function Settings() {
         danger
         title={
           <span className="flex items-center gap-2 text-red-300">
-            <AlertTriangle className="h-5 w-5" /> Turn on permanent delete?
+            <AlertTriangle className="h-5 w-5" /> {t("set.turnOnTitle")}
           </span>
         }
         footer={
           <>
             <Button variant="ghost" onClick={() => setWarnOpen(false)}>
-              Keep Recycle Bin (safer)
+              {t("set.keepBin")}
             </Button>
             <Button
               variant="danger"
@@ -89,25 +91,25 @@ export function Settings() {
               onClick={() => {
                 setPermanent(true);
                 setWarnOpen(false);
-                pushToast({ kind: "info", title: "Permanent delete is ON", body: "Be careful — deletions can no longer be undone." });
+                pushToast({ kind: "info", title: t("set.onToast"), body: t("set.onToastBody") });
               }}
             >
-              Turn on permanent delete
+              {t("set.turnOn")}
             </Button>
           </>
         }
       >
         <div className="space-y-4 text-sm">
           <div className="rounded-xl border-2 border-red-500 bg-red-950/60 p-4 text-red-200">
-            Files deleted while this is on <b>skip the Recycle Bin</b>. They cannot be restored from History, Windows or this app.
+            {t("set.warnBox")}
           </div>
           <label className="flex cursor-pointer items-start gap-3">
             <input type="checkbox" checked={ack1} onChange={(e) => setAck1(e.target.checked)} className="mt-0.5 h-4 w-4 accent-red-500" />
-            I understand deleted files will be gone forever.
+            {t("set.ack1")}
           </label>
           <label className="flex cursor-pointer items-start gap-3">
             <input type="checkbox" checked={ack2} onChange={(e) => setAck2(e.target.checked)} className="mt-0.5 h-4 w-4 accent-red-500" />
-            I have a backup of anything important.
+            {t("set.ack2")}
           </label>
         </div>
       </Modal>
@@ -118,7 +120,7 @@ export function Settings() {
 function Row({ level, text }: { level: "safe" | "review" | "unknown" | "protected"; text: string }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="w-24 shrink-0">
+      <div className="w-44 shrink-0">
         <SafetyBadge level={level} />
       </div>
       <p className="text-slate-300">{text}</p>
@@ -128,18 +130,19 @@ function Row({ level, text }: { level: "safe" | "review" | "unknown" | "protecte
 
 /** Appearance: every theme is a set of design tokens (see index.css). */
 function ThemePicker() {
+  const { t } = useT();
   const theme = useStore((s) => s.theme);
   const setTheme = useStore((s) => s.setTheme);
   return (
-    <Card title="Appearance" icon={<Palette className="h-4 w-4 text-indigo-300" />} className="mb-5">
+    <Card title={t("set.appearance")} icon={<Palette className="h-4 w-4 text-indigo-300" />} className="mb-5">
       <div className="grid grid-cols-3 gap-3">
-        {THEMES.map((t) => {
-          const active = t.id === theme;
-          const [bg, surface, accent, positive] = t.swatches;
+        {THEMES.map((th) => {
+          const active = th.id === theme;
+          const [bg, surface, accent, positive] = th.swatches;
           return (
             <button
-              key={t.id}
-              onClick={() => setTheme(t.id)}
+              key={th.id}
+              onClick={() => setTheme(th.id)}
               className={cx(
                 "rounded-card border p-2 text-left transition-all",
                 active ? "border-indigo-400/70 ring-2 ring-indigo-500/40" : "border-white/[0.08] hover:border-white/20",
@@ -160,10 +163,50 @@ function ThemePicker() {
                 </div>
               </div>
               <div className="mt-2 flex items-center gap-2 px-1">
-                <span className="font-semibold">{t.name}</span>
+                <span className="font-semibold">{th.name}</span>
                 {active && <Check className="h-4 w-4 text-indigo-300" />}
               </div>
-              <p className="px-1 pb-1 text-xs text-muted">{t.description}</p>
+              <p className="px-1 pb-1 text-xs text-muted">{th.description}</p>
+            </button>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+/** Language: English / Georgian (see src/i18n). */
+function LanguagePicker() {
+  const { t, lang } = useT();
+  const setLang = useStore((s) => s.setLang);
+  return (
+    <Card title={t("set.language")} icon={<Languages className="h-4 w-4 text-indigo-300" />} className="mb-5">
+      <p className="mb-4 text-sm text-muted">{t("set.languageBody")}</p>
+      <div className="grid grid-cols-2 gap-3">
+        {LANGUAGES.map((l) => {
+          const active = l.id === lang;
+          return (
+            <button
+              key={l.id}
+              onClick={() => setLang(l.id)}
+              className={cx(
+                "flex items-center gap-4 rounded-card border px-5 py-4 text-left transition-all",
+                active ? "border-indigo-400/70 bg-indigo-500/10 ring-2 ring-indigo-500/40" : "border-white/[0.08] hover:border-white/20",
+              )}
+            >
+              <span
+                className={cx(
+                  "flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-sm font-bold",
+                  active ? "btn-primary text-white" : "bg-white/[0.06] text-slate-300",
+                )}
+              >
+                {l.short}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-semibold">{l.native}</span>
+                <span className="block text-xs text-muted">{l.name}</span>
+              </span>
+              {active && <Check className="h-5 w-5 text-indigo-300" />}
             </button>
           );
         })}

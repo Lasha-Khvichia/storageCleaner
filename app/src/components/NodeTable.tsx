@@ -5,6 +5,8 @@ import type { NodeView } from "../api";
 import { SAFETY, cx, formatBytes, formatCount, formatDate, formatPercent } from "../lib/format";
 import { toSelected, useStore } from "../store";
 import { Checkbox, SafetyBadge } from "./ui";
+import { useT } from "../i18n/useT";
+import { trBackend } from "../i18n/backend";
 
 type SortKey = "name" | "size" | "files" | "modified" | "safety";
 
@@ -15,7 +17,7 @@ export function NodeTable({
   onOpenDir,
   showPath,
   shareMode = "parent",
-  emptyText = "Nothing here.",
+  emptyText,
 }: {
   rows: NodeView[];
   onOpenDir?: (n: NodeView) => void;
@@ -25,6 +27,7 @@ export function NodeTable({
   shareMode?: "parent" | "max";
   emptyText?: string;
 }) {
+  const { t } = useT();
   const selection = useStore((s) => s.selection);
   const toggleSelect = useStore((s) => s.toggleSelect);
   const selectMany = useStore((s) => s.selectMany);
@@ -68,7 +71,7 @@ export function NodeTable({
   );
 
   if (rows.length === 0) {
-    return <div className="py-10 text-center text-sm text-muted">{emptyText}</div>;
+    return <div className="py-10 text-center text-sm text-muted">{emptyText ?? t("table.nothing")}</div>;
   }
 
   return (
@@ -81,15 +84,15 @@ export function NodeTable({
                 checked={allSelected}
                 indeterminate={selectedCount > 0}
                 disabled={selectable.length === 0}
-                title={selectable.length === 0 ? "All items here are protected" : "Select all"}
+                title={selectable.length === 0 ? t("common.allProtected") : t("common.selectAll")}
                 onChange={(v) => selectMany(selectable.map(toSelected), v)}
               />
             </th>
-            {header("name", "Name")}
-            {header("size", "Size", "w-56")}
-            {header("files", "Files", "w-24 text-right")}
-            {header("modified", "Modified", "w-32")}
-            {header("safety", "Safety", "w-32")}
+            {header("name", t("table.name"))}
+            {header("size", t("table.size"), "w-56")}
+            {header("files", t("table.files"), "w-24 text-right")}
+            {header("modified", t("table.modified"), "w-32")}
+            {header("safety", t("table.safety"), "w-36")}
             <th className="w-10" />
           </tr>
         </thead>
@@ -112,7 +115,7 @@ export function NodeTable({
                   <Checkbox
                     checked={selected}
                     disabled={n.safety === "protected"}
-                    title={n.safety === "protected" ? `Protected: ${n.reason}` : undefined}
+                    title={n.safety === "protected" ? t("common.protectedReason", { reason: trBackend(n.reason) }) : undefined}
                     onChange={() => toggleSelect(toSelected(n))}
                   />
                 </td>
@@ -154,7 +157,7 @@ export function NodeTable({
                 </td>
                 <td className="px-2 py-2">
                   <button
-                    title="Show in Explorer"
+                    title={t("common.showInExplorer")}
                     onClick={(e) => {
                       e.stopPropagation();
                       revealItemInDir(n.path).catch(() => {});
